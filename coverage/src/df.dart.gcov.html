@@ -1,0 +1,336 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - src/df.dart</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">src</a> - df.dart<span style="font-size: 80%;"> (source / <a href="df.dart.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">94</td>
+            <td class="headerCovTableEntry">94</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2019-11-06 06:31:45</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : import 'dart:async';</a>
+<span class="lineNum">       2 </span>            : import 'dart:convert';
+<span class="lineNum">       3 </span>            : import 'dart:io';
+<span class="lineNum">       4 </span>            : 
+<span class="lineNum">       5 </span>            : import 'column.dart';
+<span class="lineNum">       6 </span>            : import 'exceptions.dart';
+<span class="lineNum">       7 </span>            : import 'info.dart';
+<span class="lineNum">       8 </span>            : import 'matrix.dart';
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : class DataFrame {
+<span class="lineNum">      11 </span><span class="lineCov">          1 :   DataFrame();</span>
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            :   List&lt;DataFrameColumn&gt; _columns = &lt;DataFrameColumn&gt;[];
+<span class="lineNum">      14 </span>            :   final DataMatrix _matrix = DataMatrix();
+<span class="lineNum">      15 </span>            :   final _info = DataFrameInfo();
+<span class="lineNum">      16 </span>            :   Map&lt;int, String&gt; _columnsIndices;
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            :   // ***********************
+<span class="lineNum">      19 </span>            :   // Getters
+<span class="lineNum">      20 </span>            :   // ***********************
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            :   // ********* data **********
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span><span class="lineCov">          2 :   Iterable&lt;Map&lt;String, dynamic&gt;&gt; get rows =&gt; _iterRows();</span>
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span><span class="lineCov">          3 :   List&lt;List&lt;dynamic&gt;&gt; get records =&gt; _matrix.data;</span>
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            :   // ********* info **********
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span><span class="lineCov">          4 :   int get length =&gt; _matrix.data.length;</span>
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span><span class="lineCov">          2 :   List&lt;DataFrameColumn&gt; get columns =&gt; _columns;</span>
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span><span class="lineCov">          2 :   List&lt;String&gt; get columnsNames =&gt;</span>
+<span class="lineNum">      35 </span><span class="lineCov">          4 :       List&lt;String&gt;.from(_columns.map&lt;String&gt;((c) =&gt; c.name));</span>
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            :   // ***********************
+<span class="lineNum">      38 </span>            :   // Constructors
+<span class="lineNum">      39 </span>            :   // ***********************
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span><span class="lineCov">          1 :   DataFrame.fromRows(List&lt;Map&lt;String, dynamic&gt;&gt; rows)</span>
+<span class="lineNum">      42 </span><span class="lineCov">          1 :       : assert(rows != null),</span>
+<span class="lineNum">      43 </span><span class="lineCov">          2 :         assert(rows.isNotEmpty) {</span>
+<span class="lineNum">      44 </span>            :     // create _columns from the first datapint
+<span class="lineNum">      45 </span><span class="lineCov">          3 :     rows[0].forEach((k, dynamic v) {</span>
+<span class="lineNum">      46 </span><span class="lineCov">          1 :       final t = v.runtimeType as Type;</span>
+<span class="lineNum">      47 </span><span class="lineCov">          3 :       _columns.add(DataFrameColumn(name: k, type: t));</span>
+<span class="lineNum">      48 </span>            :     });
+<span class="lineNum">      49 </span><span class="lineCov">          1 :     _setColumnsIndices();</span>
+<span class="lineNum">      50 </span>            :     // fill the data
+<span class="lineNum">      51 </span><span class="lineCov">          5 :     rows.forEach((row) =&gt; _matrix.addRow(row, _columnsIndices));</span>
+<span class="lineNum">      52 </span>            :   }
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span><span class="lineCov">          1 :   static Future&lt;DataFrame&gt; fromCsv(String path) async {</span>
+<span class="lineNum">      55 </span><span class="lineCov">          1 :     final file = File(path);</span>
+<span class="lineNum">      56 </span><span class="lineCov">          1 :     if (!file.existsSync()) {</span>
+<span class="lineNum">      57 </span><span class="lineCov">          2 :       throw FileNotFoundException(&quot;File not found: $path&quot;);</span>
+<span class="lineNum">      58 </span>            :     }
+<span class="lineNum">      59 </span><span class="lineCov">          1 :     final df = DataFrame();</span>
+<span class="lineNum">      60 </span>            :     var i = 1;
+<span class="lineNum">      61 </span><span class="lineCov">          1 :     await file</span>
+<span class="lineNum">      62 </span><span class="lineCov">          1 :         .openRead()</span>
+<span class="lineNum">      63 </span><span class="lineCov">          2 :         .transform&lt;String&gt;(utf8.decoder)</span>
+<span class="lineNum">      64 </span><span class="lineCov">          1 :         .transform&lt;String&gt;(const LineSplitter())</span>
+<span class="lineNum">      65 </span><span class="lineCov">          2 :         .forEach((line) {</span>
+<span class="lineNum">      66 </span><span class="lineCov">          2 :       print('line $i: $line');</span>
+<span class="lineNum">      67 </span><span class="lineCov">          1 :       final vals = line.split(&quot;,&quot;);</span>
+<span class="lineNum">      68 </span><span class="lineCov">          1 :       if (i == 1) {</span>
+<span class="lineNum">      69 </span><span class="lineCov">          2 :         vals.forEach((v) {</span>
+<span class="lineNum">      70 </span><span class="lineCov">          1 :           final t = v.runtimeType;</span>
+<span class="lineNum">      71 </span><span class="lineCov">          3 :           df._columns.add(DataFrameColumn(name: v, type: t));</span>
+<span class="lineNum">      72 </span>            :         });
+<span class="lineNum">      73 </span>            :       } else {
+<span class="lineNum">      74 </span><span class="lineCov">          3 :         df._matrix.data.add(vals);</span>
+<span class="lineNum">      75 </span>            :       }
+<span class="lineNum">      76 </span><span class="lineCov">          1 :       ++i;</span>
+<span class="lineNum">      77 </span>            :     });
+<span class="lineNum">      78 </span><span class="lineCov">          5 :     print(&quot;Parsed ${df._matrix.data.length} rows&quot;);</span>
+<span class="lineNum">      79 </span>            :     return df;
+<span class="lineNum">      80 </span>            :   }
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">          1 :   DataFrame._copyWithMatrix(DataFrame df, List&lt;List&lt;dynamic&gt;&gt; matrix) {</span>
+<span class="lineNum">      83 </span><span class="lineCov">          2 :     _columns = df._columns;</span>
+<span class="lineNum">      84 </span><span class="lineCov">          1 :     _setColumnsIndices();</span>
+<span class="lineNum">      85 </span><span class="lineCov">          2 :     _matrix.data = matrix;</span>
+<span class="lineNum">      86 </span>            :   }
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span>            :   // ***********************
+<span class="lineNum">      89 </span>            :   // Methods
+<span class="lineNum">      90 </span>            :   // ***********************
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            :   // ********* select operations **********
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">          1 :   List&lt;Map&lt;String, dynamic&gt;&gt; subset(int startIndex, int endIndex) {</span>
+<span class="lineNum">      95 </span>            :     final data =
+<span class="lineNum">      96 </span><span class="lineCov">          3 :         _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices);</span>
+<span class="lineNum">      97 </span><span class="lineCov">          5 :     _matrix.data = _matrix.data.sublist(startIndex, endIndex);</span>
+<span class="lineNum">      98 </span>            :     return data;
+<span class="lineNum">      99 </span>            :   }
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span><span class="lineCov">          1 :   DataFrame subset_(int startIndex, int endIndex) {</span>
+<span class="lineNum">     102 </span><span class="lineCov">          3 :     final _newMatrix = _matrix.data.sublist(startIndex, endIndex);</span>
+<span class="lineNum">     103 </span><span class="lineCov">          1 :     return DataFrame._copyWithMatrix(this, _newMatrix);</span>
+<span class="lineNum">     104 </span>            :   }
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">          2 :   List&lt;T&gt; colRecords&lt;T&gt;(String colName, {int limit}) =&gt; _matrix</span>
+<span class="lineNum">     107 </span><span class="lineCov">          2 :       .typedRecordsForColumnIndice&lt;T&gt;(_indiceForColumn(colName), limit: limit);</span>
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            :   // ********* filter operations **********
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">          1 :   void limit(int max, {int startIndex = 0}) =&gt;</span>
+<span class="lineNum">     112 </span><span class="lineCov">          6 :       _matrix.data = _matrix.data.sublist(startIndex, startIndex + max);</span>
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span><span class="lineCov">          1 :   DataFrame limit_(int max, {int startIndex = 0}) {</span>
+<span class="lineNum">     115 </span><span class="lineCov">          4 :     final _newMatrix = _matrix.data.sublist(startIndex, startIndex + max);</span>
+<span class="lineNum">     116 </span><span class="lineCov">          1 :     return DataFrame._copyWithMatrix(this, _newMatrix);</span>
+<span class="lineNum">     117 </span>            :   }
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span>            :   // ********* count operations **********
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">          1 :   int countNulls_(String colName,</span>
+<span class="lineNum">     122 </span>            :       {List&lt;dynamic&gt; nullValues = const &lt;dynamic&gt;[
+<span class="lineNum">     123 </span>            :         null,
+<span class="lineNum">     124 </span>            :         &quot;null&quot;,
+<span class="lineNum">     125 </span>            :         &quot;nan&quot;,
+<span class="lineNum">     126 </span>            :         &quot;NULL&quot;,
+<span class="lineNum">     127 </span>            :         &quot;N/A&quot;
+<span class="lineNum">     128 </span>            :       ]}) {
+<span class="lineNum">     129 </span><span class="lineCov">          3 :     final n = _matrix.countForValues(_indiceForColumn(colName), nullValues);</span>
+<span class="lineNum">     130 </span>            :     return n;
+<span class="lineNum">     131 </span>            :   }
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span><span class="lineCov">          1 :   int countZeros_(String colName,</span>
+<span class="lineNum">     134 </span>            :       {List&lt;dynamic&gt; zeroValues = const &lt;dynamic&gt;[0]}) {
+<span class="lineNum">     135 </span><span class="lineCov">          3 :     final n = _matrix.countForValues(_indiceForColumn(colName), zeroValues);</span>
+<span class="lineNum">     136 </span>            :     return n;
+<span class="lineNum">     137 </span>            :   }
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            :   // ********* insert operations **********
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineCov">          4 :   void addRow(Map&lt;String, dynamic&gt; row) =&gt; _matrix.addRow(row, _columnsIndices);</span>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            :   // ********* delete operations **********
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineCov">          4 :   void removeRowAt(int index) =&gt; _matrix.data.removeAt(index);</span>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">          4 :   void removeFirstRow() =&gt; _matrix.data.removeAt(0);</span>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineCov">          4 :   void removeLastRow() =&gt; _matrix.data.removeLast();</span>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            :   // ********* dataframe operations **********
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span><span class="lineCov">          4 :   DataFrame copy_() =&gt; DataFrame._copyWithMatrix(this, _matrix.data);</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            :   // ********* calculations **********
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span><span class="lineCov">          4 :   double sum(String colName) =&gt; _matrix.sumCol&lt;num&gt;(_indiceForColumn(colName));</span>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">          1 :   double mean(String colName) =&gt;</span>
+<span class="lineNum">     160 </span><span class="lineCov">          3 :       _matrix.meanCol&lt;num&gt;(_indiceForColumn(colName));</span>
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span><span class="lineCov">          4 :   double max(String colName) =&gt; _matrix.maxCol&lt;num&gt;(_indiceForColumn(colName));</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">          4 :   double min(String colName) =&gt; _matrix.minCol&lt;num&gt;(_indiceForColumn(colName));</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span>            :   // ********* info **********
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">          1 :   void head([int lines = 5]) {</span>
+<span class="lineNum">     169 </span>            :     var l = lines;
+<span class="lineNum">     170 </span><span class="lineCov">          2 :     if (length &lt; lines) {</span>
+<span class="lineNum">     171 </span><span class="lineCov">          1 :       l = length;</span>
+<span class="lineNum">     172 </span>            :     }
+<span class="lineNum">     173 </span><span class="lineCov">          3 :     final rows = _matrix.data.sublist(0, l);</span>
+<span class="lineNum">     174 </span><span class="lineCov">          2 :     _info.printRows(rows);</span>
+<span class="lineNum">     175 </span><span class="lineCov">          3 :     print(&quot;$length rows&quot;);</span>
+<span class="lineNum">     176 </span>            :   }
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span><span class="lineCov">          1 :   void show([int lines = 5]) {</span>
+<span class="lineNum">     179 </span><span class="lineCov">          1 :     print(</span>
+<span class="lineNum">     180 </span><span class="lineCov">          6 :         &quot;${_columns.length} columns and $length rows: ${columnsNames.join(&quot;, &quot;)}&quot;);</span>
+<span class="lineNum">     181 </span>            :     var l = lines;
+<span class="lineNum">     182 </span><span class="lineCov">          2 :     if (length &lt; lines) {</span>
+<span class="lineNum">     183 </span><span class="lineCov">          1 :       l = length;</span>
+<span class="lineNum">     184 </span>            :     }
+<span class="lineNum">     185 </span><span class="lineCov">          3 :     final rows = _matrix.data.sublist(0, l);</span>
+<span class="lineNum">     186 </span><span class="lineCov">          2 :     _info.printRows(rows);</span>
+<span class="lineNum">     187 </span>            :   }
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">          4 :   void cols() =&gt; _info.colsInfo(columns: _columns);</span>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            :   // ***********************
+<span class="lineNum">     192 </span>            :   // Internal methods
+<span class="lineNum">     193 </span>            :   // ***********************
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">          1 :   Iterable&lt;Map&lt;String, dynamic&gt;&gt; _iterRows() sync* {</span>
+<span class="lineNum">     196 </span>            :     var i = 0;
+<span class="lineNum">     197 </span><span class="lineCov">          4 :     while (i &lt; _matrix.data.length) {</span>
+<span class="lineNum">     198 </span><span class="lineCov">          3 :       yield _matrix.rowsForIndex(i, _columnsIndices);</span>
+<span class="lineNum">     199 </span><span class="lineCov">          1 :       ++i;</span>
+<span class="lineNum">     200 </span>            :     }
+<span class="lineNum">     201 </span>            :   }
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            :   /*   DataFrame _sort(String colName,
+<span class="lineNum">     204 </span>            :       {bool inPlace = false, bool reverse = false}) {
+<span class="lineNum">     205 </span>            :     assert(colName != null);
+<span class="lineNum">     206 </span>            :     _isSortedBy = colName;
+<span class="lineNum">     207 </span>            :     final colIndice = _indiceForColumn(colName);
+<span class="lineNum">     208 </span>            :     final order = _sortIndexForIndice(colIndice);
+<span class="lineNum">     209 </span>            :     var _newMatrix = &lt;List&lt;dynamic&gt;&gt;[];
+<span class="lineNum">     210 </span>            :     for (final indice in order) {
+<span class="lineNum">     211 </span>            :       _newMatrix.add(_matrix.data[indice]);
+<span class="lineNum">     212 </span>            :     }
+<span class="lineNum">     213 </span>            :     if (reverse) {
+<span class="lineNum">     214 </span>            :       _newMatrix = _newMatrix.reversed.toList();
+<span class="lineNum">     215 </span>            :     }
+<span class="lineNum">     216 </span>            :     if (!inPlace) {
+<span class="lineNum">     217 </span>            :       return DataFrame._copyWithMatrix(this, _newMatrix);
+<span class="lineNum">     218 </span>            :     } else {
+<span class="lineNum">     219 </span>            :       _matrix.data = _newMatrix;
+<span class="lineNum">     220 </span>            :     }
+<span class="lineNum">     221 </span>            :     return null;
+<span class="lineNum">     222 </span>            :   }
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            :   List&lt;int&gt; _sortIndexForIndice(int indice) {
+<span class="lineNum">     225 </span>            :     final order = &lt;int&gt;[];
+<span class="lineNum">     226 </span>            :     final values = _columnDataWithIndex(indice);
+<span class="lineNum">     227 </span>            :     final orderedValues = values.keys.toList()..sort();
+<span class="lineNum">     228 </span>            :     for (final value in orderedValues) {
+<span class="lineNum">     229 </span>            :       order.add(values[value]);
+<span class="lineNum">     230 </span>            :     }
+<span class="lineNum">     231 </span>            :     return order;
+<span class="lineNum">     232 </span>            :   }*/
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span><span class="lineCov">          1 :   int _indiceForColumn(String colName) {</span>
+<span class="lineNum">     235 </span>            :     int ind;
+<span class="lineNum">     236 </span>            :     var i = 0;
+<span class="lineNum">     237 </span><span class="lineCov">          2 :     for (final col in _columns) {</span>
+<span class="lineNum">     238 </span><span class="lineCov">          2 :       if (colName == col.name) {</span>
+<span class="lineNum">     239 </span>            :         ind = i;
+<span class="lineNum">     240 </span>            :         break;
+<span class="lineNum">     241 </span>            :       }
+<span class="lineNum">     242 </span><span class="lineCov">          1 :       ++i;</span>
+<span class="lineNum">     243 </span>            :     }
+<span class="lineNum">     244 </span>            :     if (ind == null) {
+<span class="lineNum">     245 </span><span class="lineCov">          2 :       throw ColumnNotFoundException(&quot;Can not find column $colName&quot;);</span>
+<span class="lineNum">     246 </span>            :     }
+<span class="lineNum">     247 </span>            :     return ind;
+<span class="lineNum">     248 </span>            :   }
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">          1 :   Map&lt;int, String&gt; _setColumnsIndices() {</span>
+<span class="lineNum">     251 </span><span class="lineCov">          1 :     final ind = &lt;int, String&gt;{};</span>
+<span class="lineNum">     252 </span>            :     var i = 0;
+<span class="lineNum">     253 </span><span class="lineCov">          2 :     for (final col in _columns) {</span>
+<span class="lineNum">     254 </span><span class="lineCov">          2 :       ind[i] = col.name;</span>
+<span class="lineNum">     255 </span><span class="lineCov">          1 :       ++i;</span>
+<span class="lineNum">     256 </span>            :     }
+<span class="lineNum">     257 </span><span class="lineCov">          1 :     _columnsIndices = ind;</span>
+<span class="lineNum">     258 </span>            :     return ind;
+<span class="lineNum">     259 </span>            :   }
+<span class="lineNum">     260 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
