@@ -1,20 +1,16 @@
-os:
-  - linux
-sudo: false
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - libstdc++6
-before_script:
-  - git clone https://github.com/flutter/flutter.git -b stable --depth 1
-  - ./flutter/bin/flutter doctor
+language: dart
+
+dart:
+  - 2.3.0
+
+install:
+  - pub get
   - gem install coveralls-lcov
-script:
-  - ./flutter/bin/flutter test --coverage
+
+script: pub run test_coverage
+
 after_success:
   - coveralls-lcov coverage/lcov.info
-cache:
-  directories:
-    - $HOME/.pub-cache
+
+branches:
+  only: [master]
