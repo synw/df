@@ -7,7 +7,9 @@ import 'exceptions.dart';
 import 'info.dart';
 import 'matrix.dart';
 
+/// The main dataframe class
 class DataFrame {
+  /// Default constructor
   DataFrame();
 
   List<DataFrameColumn> _columns = <DataFrameColumn>[];
@@ -21,16 +23,21 @@ class DataFrame {
 
   // ********* data **********
 
+  /// An iterable of the data
   Iterable<Map<String, dynamic>> get rows => _iterRows();
 
+  /// All the data
   List<List<dynamic>> get records => _matrix.data;
 
   // ********* info **********
 
+  /// Number of rows og the data
   int get length => _matrix.data.length;
 
+  /// The dataframe columns
   List<DataFrameColumn> get columns => _columns;
 
+  /// The dataframe columns names
   List<String> get columnsNames =>
       List<String>.from(_columns.map<String>((c) => c.name));
 
@@ -38,6 +45,7 @@ class DataFrame {
   // Constructors
   // ***********************
 
+  /// Build a dataframe from a list of rows
   DataFrame.fromRows(List<Map<String, dynamic>> rows)
       : assert(rows != null),
         assert(rows.isNotEmpty) {
@@ -51,6 +59,7 @@ class DataFrame {
     rows.forEach((row) => _matrix.addRow(row, _columnsIndices));
   }
 
+  /// Build a dataframe from a csv file
   static Future<DataFrame> fromCsv(String path) async {
     final file = File(path);
     if (!file.existsSync()) {
@@ -91,6 +100,7 @@ class DataFrame {
 
   // ********* select operations **********
 
+  /// Limit the dataframe to a subset of data
   List<Map<String, dynamic>> subset(int startIndex, int endIndex) {
     final data =
         _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices);
@@ -98,19 +108,23 @@ class DataFrame {
     return data;
   }
 
+  /// Get a new dataframe with a subset of data
   DataFrame subset_(int startIndex, int endIndex) {
     final _newMatrix = _matrix.data.sublist(startIndex, endIndex);
     return DataFrame._copyWithMatrix(this, _newMatrix);
   }
 
+  /// Get typed records for a column
   List<T> colRecords<T>(String colName, {int limit}) => _matrix
       .typedRecordsForColumnIndice<T>(_indiceForColumn(colName), limit: limit);
 
   // ********* filter operations **********
 
+  /// Limit the data
   void limit(int max, {int startIndex = 0}) =>
       _matrix.data = _matrix.data.sublist(startIndex, startIndex + max);
 
+  /// Get a new dataframe with limited data
   DataFrame limit_(int max, {int startIndex = 0}) {
     final _newMatrix = _matrix.data.sublist(startIndex, startIndex + max);
     return DataFrame._copyWithMatrix(this, _newMatrix);
@@ -118,6 +132,10 @@ class DataFrame {
 
   // ********* count operations **********
 
+  /// Count null values
+  ///
+  /// It is possible to provide a custom list of values
+  /// considered as null with [nullValues]
   int countNulls_(String colName,
       {List<dynamic> nullValues = const <dynamic>[
         null,
@@ -130,6 +148,10 @@ class DataFrame {
     return n;
   }
 
+  /// Count zero values
+  ///
+  /// It is possible to provide a custom list of values
+  /// considered as zero with [zeroValues]
   int countZeros_(String colName,
       {List<dynamic> zeroValues = const <dynamic>[0]}) {
     final n = _matrix.countForValues(_indiceForColumn(colName), zeroValues);
@@ -138,33 +160,43 @@ class DataFrame {
 
   // ********* insert operations **********
 
+  /// Add a row to the data
   void addRow(Map<String, dynamic> row) => _matrix.addRow(row, _columnsIndices);
 
   // ********* delete operations **********
 
+  /// Remove a row at a given index position
   void removeRowAt(int index) => _matrix.data.removeAt(index);
 
+  /// Remove the first row
   void removeFirstRow() => _matrix.data.removeAt(0);
 
+  /// Remove the last row
   void removeLastRow() => _matrix.data.removeLast();
 
   // ********* dataframe operations **********
 
+  /// Get a copy of a dataframe
   DataFrame copy_() => DataFrame._copyWithMatrix(this, _matrix.data);
 
   // ********* calculations **********
 
+  /// Sum a column
   double sum(String colName) => _matrix.sumCol<num>(_indiceForColumn(colName));
 
+  /// Mean a column
   double mean(String colName) =>
       _matrix.meanCol<num>(_indiceForColumn(colName));
 
+  /// Get the max value of a column
   double max(String colName) => _matrix.maxCol<num>(_indiceForColumn(colName));
 
+  /// Get the min value of a column
   double min(String colName) => _matrix.minCol<num>(_indiceForColumn(colName));
 
   // ********* info **********
 
+  /// Print sample data
   void head([int lines = 5]) {
     var l = lines;
     if (length < lines) {
@@ -175,6 +207,7 @@ class DataFrame {
     print("$length rows");
   }
 
+  /// Print info and sample data
   void show([int lines = 5]) {
     print(
         "${_columns.length} columns and $length rows: ${columnsNames.join(", ")}");
@@ -186,6 +219,7 @@ class DataFrame {
     _info.printRows(rows);
   }
 
+  /// Print columns info
   void cols() => _info.colsInfo(columns: _columns);
 
   // ***********************
@@ -195,7 +229,7 @@ class DataFrame {
   Iterable<Map<String, dynamic>> _iterRows() sync* {
     var i = 0;
     while (i < _matrix.data.length) {
-      yield _matrix.rowsForIndex(i, _columnsIndices);
+      yield _matrix.rowForIndex(i, _columnsIndices);
       ++i;
     }
   }

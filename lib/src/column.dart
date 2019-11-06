@@ -1,9 +1,14 @@
 import 'package:meta/meta.dart';
 
+/// A data frame column
 class DataFrameColumn {
+  /// Provide a [name] and [type]
   DataFrameColumn({@required this.name, @required this.type});
 
+  /// The column's name
   String name;
+
+  /// The column's type
   Type type;
 
   @override

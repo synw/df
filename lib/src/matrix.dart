@@ -2,11 +2,14 @@ import 'package:ml_linalg/vector.dart';
 
 import 'exceptions.dart';
 
+/// A class to manage the data inside the [DataFrame]
 class DataMatrix {
+  /// The dataset
   List<List<dynamic>> data = <List<dynamic>>[];
 
   // ********* insert operations **********
 
+  /// Add a row
   void addRow(Map<String, dynamic> record, Map<int, String> indices) {
     final row = <dynamic>[];
     var i = 0;
@@ -20,7 +23,8 @@ class DataMatrix {
 
   // ********* select operations **********
 
-  Map<String, dynamic> rowsForIndex(int index, Map<int, String> indices) {
+  /// Row for an index position
+  Map<String, dynamic> rowForIndex(int index, Map<int, String> indices) {
     final row = <String, dynamic>{};
     final dataRow = data[index];
     var i = 0;
@@ -31,6 +35,7 @@ class DataMatrix {
     return row;
   }
 
+  /// Rows for an index range of positions
   List<Map<String, dynamic>> rowsForIndexRange(
       int startIndex, int endIndex, Map<int, String> indices) {
     final dataRows = <Map<String, dynamic>>[];
@@ -46,6 +51,7 @@ class DataMatrix {
     return dataRows;
   }
 
+  /// Get typed data from a column
   List<T> typedRecordsForColumnIndice<T>(int columnIndice, {int limit}) {
     final dataFound = <T>[];
     var i = 0;
@@ -70,6 +76,7 @@ class DataMatrix {
 
   // ********* count operations **********
 
+  /// Count values in a column
   int countForValues(int columnIndice, List<dynamic> values) {
     var n = 0;
     data.forEach((row) {
@@ -82,6 +89,7 @@ class DataMatrix {
 
   // ********* aggregations **********
 
+  /// Sum a column
   double sumCol<T>(int columnIndice) {
     final rawData = typedRecordsForColumnIndice<T>(columnIndice);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
@@ -89,6 +97,7 @@ class DataMatrix {
     return vector.sum();
   }
 
+  /// Mean a column
   double meanCol<T>(int columnIndice) {
     final rawData = typedRecordsForColumnIndice<T>(columnIndice);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
@@ -96,6 +105,7 @@ class DataMatrix {
     return vector.mean();
   }
 
+  /// Get the max value of a column
   double maxCol<T>(int columnIndice) {
     final rawData = typedRecordsForColumnIndice<T>(columnIndice);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
@@ -103,6 +113,7 @@ class DataMatrix {
     return vector.max();
   }
 
+  /// Get the min value of a column
   double minCol<T>(int columnIndice) {
     final rawData = typedRecordsForColumnIndice<T>(columnIndice);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
