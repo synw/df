@@ -1,5 +1,7 @@
 # Df
 
+[![Build Status](https://travis-ci.org/synw/df.svg?branch=master)](https://travis-ci.org/synw/df) [![Coverage Status](https://coveralls.io/repos/github/synw/df/badge.svg?branch=master)](https://coveralls.io/github/synw/df?branch=master)
+
 A dataframe for Dart
 
 ## Usage
