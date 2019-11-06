@@ -2,17 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'column.dart';
 import 'exceptions.dart';
-import 'models/column.dart';
-import 'models/info.dart';
-import 'models/matrix.dart';
+import 'info.dart';
+import 'matrix.dart';
 
 class DataFrame {
   DataFrame();
 
   List<DataFrameColumn> _columns = <DataFrameColumn>[];
   final DataMatrix _matrix = DataMatrix();
-  final _info = GeoDataFrameInfo();
+  final _info = DataFrameInfo();
   Map<int, String> _columnsIndices;
 
   // ***********************
@@ -91,16 +91,20 @@ class DataFrame {
 
   // ********* select operations **********
 
-  List<Map<String, dynamic>> subset(int startIndex, int endIndex) =>
-      _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices);
+  List<Map<String, dynamic>> subset(int startIndex, int endIndex) {
+    final data =
+        _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices);
+    _matrix.data = _matrix.data.sublist(startIndex, endIndex);
+    return data;
+  }
 
   DataFrame subset_(int startIndex, int endIndex) {
     final _newMatrix = _matrix.data.sublist(startIndex, endIndex);
     return DataFrame._copyWithMatrix(this, _newMatrix);
   }
 
-  List<T> colRecords<T>(String colName) =>
-      _matrix.typedRecordsForColumnIndice<T>(_indiceForColumn(colName));
+  List<T> colRecords<T>(String colName, {int limit}) => _matrix
+      .typedRecordsForColumnIndice<T>(_indiceForColumn(colName), limit: limit);
 
   // ********* filter operations **********
 
@@ -162,16 +166,27 @@ class DataFrame {
   // ********* info **********
 
   void head([int lines = 5]) {
-    print("${_columns.length} columns: ${columnsNames.join(",")}");
-    final rows = _matrix.data.sublist(0, lines);
+    var l = lines;
+    if (length < lines) {
+      l = length;
+    }
+    final rows = _matrix.data.sublist(0, l);
     _info.printRows(rows);
     print("$length rows");
   }
 
   void show([int lines = 5]) {
-    print("${_columns.length} columns and $length rows");
-    head(lines);
+    print(
+        "${_columns.length} columns and $length rows: ${columnsNames.join(", ")}");
+    var l = lines;
+    if (length < lines) {
+      l = length;
+    }
+    final rows = _matrix.data.sublist(0, l);
+    _info.printRows(rows);
   }
+
+  void cols() => _info.colsInfo(columns: _columns);
 
   // ***********************
   // Internal methods
