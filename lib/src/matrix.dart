@@ -11,6 +11,7 @@ class DataMatrix {
 
   /// Add a row
   void addRow(Map<String, dynamic> record, Map<int, String> indices) {
+    print("DF ADD ROW $record / $indices");
     final row = <dynamic>[];
     var i = 0;
     record.forEach((k, dynamic v) {

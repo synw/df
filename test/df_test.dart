@@ -101,10 +101,10 @@ void main() {
       <String, dynamic>{"col1": 1, "col2": 1},
     ];
     df = DataFrame.fromRows(rows)..head();
-    expect(df.max("col2"), 2);
-    expect(df.min("col2"), 1);
-    expect(df.mean("col1"), 1);
-    expect(df.sum("col1"), 2);
+    expect(df.max_("col2"), 2);
+    expect(df.min_("col2"), 1);
+    expect(df.mean_("col1"), 1);
+    expect(df.sum_("col1"), 2);
   });
 
   test("error", () async {
@@ -114,7 +114,7 @@ void main() {
     ];
     df = DataFrame.fromRows(rows)..cols();
     try {
-      df.sum("wrong_col");
+      df.sum_("wrong_col");
     } catch (e) {
       expect(e is ColumnNotFoundException, true);
     }

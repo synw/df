@@ -15,7 +15,7 @@ class DataFrame {
   List<DataFrameColumn> _columns = <DataFrameColumn>[];
   final DataMatrix _matrix = DataMatrix();
   final _info = DataFrameInfo();
-  Map<int, String> _columnsIndices;
+  //Map<int, String> _columnsIndices;
 
   // ***********************
   // Getters
@@ -23,7 +23,7 @@ class DataFrame {
 
   // ********* data **********
 
-  /// An iterable of the data
+  /// An iterable of rows data
   Iterable<Map<String, dynamic>> get rows => _iterRows();
 
   /// All the data
@@ -54,9 +54,8 @@ class DataFrame {
       final t = v.runtimeType as Type;
       _columns.add(DataFrameColumn(name: k, type: t));
     });
-    _setColumnsIndices();
     // fill the data
-    rows.forEach((row) => _matrix.addRow(row, _columnsIndices));
+    rows.forEach((row) => _matrix.addRow(row, _columnsIndices()));
   }
 
   /// Build a dataframe from a csv file
@@ -90,7 +89,6 @@ class DataFrame {
 
   DataFrame._copyWithMatrix(DataFrame df, List<List<dynamic>> matrix) {
     _columns = df._columns;
-    _setColumnsIndices();
     _matrix.data = matrix;
   }
 
@@ -103,7 +101,7 @@ class DataFrame {
   /// Limit the dataframe to a subset of data
   List<Map<String, dynamic>> subset(int startIndex, int endIndex) {
     final data =
-        _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices);
+        _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices());
     _matrix.data = _matrix.data.sublist(startIndex, endIndex);
     return data;
   }
@@ -161,7 +159,8 @@ class DataFrame {
   // ********* insert operations **********
 
   /// Add a row to the data
-  void addRow(Map<String, dynamic> row) => _matrix.addRow(row, _columnsIndices);
+  void addRow(Map<String, dynamic> row) =>
+      _matrix.addRow(row, _columnsIndices());
 
   // ********* delete operations **********
 
@@ -179,20 +178,26 @@ class DataFrame {
   /// Get a copy of a dataframe
   DataFrame copy_() => DataFrame._copyWithMatrix(this, _matrix.data);
 
+  /// Set the dataframe columns
+  ///
+  /// Use this in constructors if you extend the [Df] class
+  /// to set initial columns
+  void setColumns(List<DataFrameColumn> cols) => _columns.addAll(cols);
+
   // ********* calculations **********
 
-  /// Sum a column
-  double sum(String colName) => _matrix.sumCol<num>(_indiceForColumn(colName));
+  /// Sum of a column
+  double sum_(String colName) => _matrix.sumCol<num>(_indiceForColumn(colName));
 
-  /// Mean a column
-  double mean(String colName) =>
+  /// Mean of a column
+  double mean_(String colName) =>
       _matrix.meanCol<num>(_indiceForColumn(colName));
 
   /// Get the max value of a column
-  double max(String colName) => _matrix.maxCol<num>(_indiceForColumn(colName));
+  double max_(String colName) => _matrix.maxCol<num>(_indiceForColumn(colName));
 
   /// Get the min value of a column
-  double min(String colName) => _matrix.minCol<num>(_indiceForColumn(colName));
+  double min_(String colName) => _matrix.minCol<num>(_indiceForColumn(colName));
 
   // ********* info **********
 
@@ -229,7 +234,7 @@ class DataFrame {
   Iterable<Map<String, dynamic>> _iterRows() sync* {
     var i = 0;
     while (i < _matrix.data.length) {
-      yield _matrix.rowForIndex(i, _columnsIndices);
+      yield _matrix.rowForIndex(i, _columnsIndices());
       ++i;
     }
   }
@@ -281,14 +286,13 @@ class DataFrame {
     return ind;
   }
 
-  Map<int, String> _setColumnsIndices() {
+  Map<int, String> _columnsIndices() {
     final ind = <int, String>{};
     var i = 0;
     for (final col in _columns) {
       ind[i] = col.name;
       ++i;
     }
-    _columnsIndices = ind;
     return ind;
   }
 }
