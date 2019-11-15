@@ -1,7 +1,7 @@
 import 'package:ml_linalg/vector.dart';
 
-import 'exceptions.dart';
 import 'column.dart';
+import 'exceptions.dart';
 
 /// A class to manage the data inside the [DataFrame]
 class DataMatrix {
@@ -13,7 +13,7 @@ class DataMatrix {
   /// Add a row
   void addRow(Map<String, dynamic> row, Map<int, String> indices,
       List<DataFrameColumn> columns) {
-    print("DF ADD ROW $row / $indices");
+    //print("DF ADD ROW $row / $indices");
     final r = <dynamic>[];
     columns.forEach((col) {
       dynamic v = row[col.name];
