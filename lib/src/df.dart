@@ -81,17 +81,32 @@ class DataFrame {
       if (i == 1) {
         // set columns names
         colNames = vals;
-      } else if (i == 2) {
+      } else {
         // infer columns types from records
         var vi = 0;
+        final colValues = <dynamic>[];
         vals.forEach((v) {
-          final col = DataFrameColumn.inferFromRecord(v, colNames[vi]);
-          df._columns.add(col);
+          if (i == 2) {
+            final col = DataFrameColumn.inferFromRecord(v, colNames[vi]);
+            df._columns.add(col);
+          }
+          // cast records to the right type
+          switch (df._columns[vi].type) {
+            case int:
+              colValues.add(int.tryParse(v));
+              break;
+            case double:
+              colValues.add(double.tryParse(v));
+              break;
+            case DateTime:
+              colValues.add(DateTime.tryParse(v));
+              break;
+            default:
+              colValues.add(v);
+          }
           ++vi;
         });
-        df._matrix.data.add(vals);
-      } else {
-        df._matrix.data.add(vals);
+        df._matrix.data.add(colValues);
       }
       ++i;
     });
