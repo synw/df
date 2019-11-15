@@ -27,7 +27,8 @@ class DataFrame {
   Iterable<Map<String, dynamic>> get rows => _iterRows();
 
   /// All the data
-  List<List<dynamic>> get records => _matrix.data;
+  List<List<dynamic>> get dataset => _matrix.data;
+  set dataset(List<List<dynamic>> dataPoints) => _matrix.data = dataPoints;
 
   // ********* info **********
 
@@ -40,6 +41,9 @@ class DataFrame {
   /// The dataframe columns names
   List<String> get columnsNames =>
       List<String>.from(_columns.map<String>((c) => c.name));
+
+  /// The dataframe columns indices
+  Map<int, String> get columnsIndices => _columnsIndices();
 
   // ***********************
   // Constructors
@@ -66,6 +70,7 @@ class DataFrame {
     }
     final df = DataFrame();
     var i = 1;
+    List<String> colNames;
     await file
         .openRead()
         .transform<String>(utf8.decoder)
@@ -74,9 +79,15 @@ class DataFrame {
       print('line $i: $line');
       final vals = line.split(",");
       if (i == 1) {
+        // set columns names
+        colNames = vals;
+      } else if (i == 2) {
+        // infer columns types from records
+        var vi = 0;
         vals.forEach((v) {
-          final t = v.runtimeType;
-          df._columns.add(DataFrameColumn(name: v, type: t));
+          final col = DataFrameColumn.inferFromRecord(v, colNames[vi]);
+          df._columns.add(col);
+          ++vi;
         });
       } else {
         df._matrix.data.add(vals);
@@ -161,6 +172,9 @@ class DataFrame {
   /// Add a row to the data
   void addRow(Map<String, dynamic> row) =>
       _matrix.addRow(row, _columnsIndices());
+
+  /// Add a line of records to the data
+  void addRecords(List<dynamic> records) => _matrix.data.add(records);
 
   // ********* delete operations **********
 

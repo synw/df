@@ -11,6 +11,20 @@ class DataFrameColumn {
   /// The column's type
   Type type;
 
+  /// Infer the column types from a datapoint
+  DataFrameColumn.inferFromRecord(String record, this.name)
+      : assert(name != null),
+        assert(record != null) {
+    type = String;
+    if (int.tryParse(record) != null) {
+      type = int;
+    } else if (double.tryParse(record) != null) {
+      type = double;
+    } else if (DateTime.tryParse(record) != null) {
+      type = DateTime;
+    }
+  }
+
   @override
   String toString() {
     return "$name ($type)";
