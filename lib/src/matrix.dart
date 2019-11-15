@@ -1,6 +1,7 @@
 import 'package:ml_linalg/vector.dart';
 
 import 'exceptions.dart';
+import 'column.dart';
 
 /// A class to manage the data inside the [DataFrame]
 class DataMatrix {
@@ -10,16 +11,28 @@ class DataMatrix {
   // ********* insert operations **********
 
   /// Add a row
-  void addRow(Map<String, dynamic> record, Map<int, String> indices) {
-    print("DF ADD ROW $record / $indices");
-    final row = <dynamic>[];
-    var i = 0;
-    record.forEach((k, dynamic v) {
-      final keyName = indices[i];
-      row.add(record[keyName]);
-      ++i;
+  void addRow(Map<String, dynamic> row, Map<int, String> indices,
+      List<DataFrameColumn> columns) {
+    print("DF ADD ROW $row / $indices");
+    final r = <dynamic>[];
+    columns.forEach((col) {
+      dynamic v = row[col.name];
+      // cast records to the right type
+      switch (col.type) {
+        case int:
+          v = int.tryParse(v.toString());
+          break;
+        case double:
+          v = double.tryParse(v.toString());
+          break;
+        case DateTime:
+          v = DateTime.tryParse(v.toString());
+          break;
+        default:
+      }
+      r.add(v);
     });
-    data.add(row);
+    data.add(r);
   }
 
   // ********* select operations **********
