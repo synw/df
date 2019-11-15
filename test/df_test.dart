@@ -15,7 +15,7 @@ void main() {
     expect(df.length, 2);
     expect(df.columnsNames, <String>["col1", "col2"]);
     expect(df.rows, rows);
-    expect(df.records, <dynamic>[
+    expect(df.dataset, <dynamic>[
       <dynamic>["a", "b"],
       <dynamic>["a", "b"]
     ]);
