@@ -89,6 +89,7 @@ class DataFrame {
           df._columns.add(col);
           ++vi;
         });
+        df._matrix.data.add(vals);
       } else {
         df._matrix.data.add(vals);
       }
