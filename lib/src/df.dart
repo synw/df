@@ -59,7 +59,7 @@ class DataFrame {
       _columns.add(DataFrameColumn(name: k, type: t));
     });
     // fill the data
-    rows.forEach((row) => _matrix.addRow(row, _columnsIndices(), _columns));
+    rows.forEach((row) => _matrix.addRow(row, _columnsIndices()));
   }
 
   static List<dynamic> _parseLine(
@@ -196,7 +196,7 @@ class DataFrame {
 
   /// Add a row to the data
   void addRow(Map<String, dynamic> row) =>
-      _matrix.addRow(row, _columnsIndices(), _columns);
+      _matrix.addRow(row, _columnsIndices());
 
   /// Add a line of records to the data
   void addRecords(List<dynamic> records) => _matrix.data.add(records);
