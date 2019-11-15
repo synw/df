@@ -59,7 +59,31 @@ class DataFrame {
       _columns.add(DataFrameColumn(name: k, type: t));
     });
     // fill the data
-    rows.forEach((row) => _matrix.addRow(row, _columnsIndices()));
+    rows.forEach((row) => _matrix.addRow(row, _columnsIndices(), _columns));
+  }
+
+  static List<dynamic> _parseLine(
+      List<dynamic> vals, List<DataFrameColumn> columnsNames) {
+    var vi = 0;
+    final colValues = <dynamic>[];
+    vals.forEach((dynamic v) {
+      // cast records to the right type
+      switch (columnsNames[vi].type) {
+        case int:
+          colValues.add(int.tryParse(v.toString()));
+          break;
+        case double:
+          colValues.add(double.tryParse(v.toString()));
+          break;
+        case DateTime:
+          colValues.add(DateTime.tryParse(v.toString()));
+          break;
+        default:
+          colValues.add(v);
+      }
+      ++vi;
+    });
+    return colValues;
   }
 
   /// Build a dataframe from a csv file
@@ -70,7 +94,7 @@ class DataFrame {
     }
     final df = DataFrame();
     var i = 1;
-    List<String> colNames;
+    List<String> _colNames;
     await file
         .openRead()
         .transform<String>(utf8.decoder)
@@ -80,32 +104,17 @@ class DataFrame {
       final vals = line.split(",");
       if (i == 1) {
         // set columns names
-        colNames = vals;
+        _colNames = vals;
       } else {
-        // infer columns types from records
         var vi = 0;
-        final colValues = <dynamic>[];
-        vals.forEach((v) {
-          if (i == 2) {
-            final col = DataFrameColumn.inferFromRecord(v, colNames[vi]);
+        if (i == 2) {
+          vals.forEach((v) {
+            final col = DataFrameColumn.inferFromRecord(v, _colNames[vi]);
             df._columns.add(col);
-          }
-          // cast records to the right type
-          switch (df._columns[vi].type) {
-            case int:
-              colValues.add(int.tryParse(v));
-              break;
-            case double:
-              colValues.add(double.tryParse(v));
-              break;
-            case DateTime:
-              colValues.add(DateTime.tryParse(v));
-              break;
-            default:
-              colValues.add(v);
-          }
-          ++vi;
-        });
+            ++vi;
+          });
+        }
+        final colValues = _parseLine(vals, df._columns);
         df._matrix.data.add(colValues);
       }
       ++i;
@@ -187,7 +196,7 @@ class DataFrame {
 
   /// Add a row to the data
   void addRow(Map<String, dynamic> row) =>
-      _matrix.addRow(row, _columnsIndices());
+      _matrix.addRow(row, _columnsIndices(), _columns);
 
   /// Add a line of records to the data
   void addRecords(List<dynamic> records) => _matrix.data.add(records);
