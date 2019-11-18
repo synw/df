@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:meta/meta.dart';
+
+import '../df.dart';
 import 'column.dart';
 import 'exceptions.dart';
 import 'info.dart';
@@ -87,7 +91,7 @@ class DataFrame {
   }
 
   /// Build a dataframe from a csv file
-  static Future<DataFrame> fromCsv(String path) async {
+  static Future<DataFrame> fromCsv(String path, {bool verbose = false}) async {
     final file = File(path);
     if (!file.existsSync()) {
       throw FileNotFoundException("File not found: $path");
@@ -100,7 +104,7 @@ class DataFrame {
         .transform<String>(utf8.decoder)
         .transform<String>(const LineSplitter())
         .forEach((line) {
-      print('line $i: $line');
+      //print('line $i: $line');
       final vals = line.split(",");
       if (i == 1) {
         // set columns names
@@ -119,7 +123,9 @@ class DataFrame {
       }
       ++i;
     });
-    print("Parsed ${df._matrix.data.length} rows");
+    if (verbose) {
+      print("Parsed ${df._matrix.data.length} rows");
+    }
     return df;
   }
 
@@ -266,6 +272,9 @@ class DataFrame {
   /// Print columns info
   void cols() => _info.colsInfo(columns: _columns);
 
+  /// Get the indice of a column
+  int columnIndice(String colName) => _indiceForColumn(colName);
+
   // ***********************
   // Internal methods
   // ***********************
@@ -276,6 +285,44 @@ class DataFrame {
       yield _matrix.rowForIndex(i, _columnsIndices());
       ++i;
     }
+  }
+
+  /// Get a new dataframe ssorted by a column
+  DataFrame sort_(String colName) =>
+      _sort(colName, inPlace: false) as DataFrame;
+
+  /// Sort this dataframe by a column
+  void sort(String colName) => _sort(colName, inPlace: true);
+
+  dynamic _sort(String colName, {@required bool inPlace}) {
+    assert(colName != null);
+    final colData =
+        _matrix.typedRecordsForColumnIndice<dynamic>(_indiceForColumn(colName));
+    // create a map of index/data
+    final dataIndex = <int, dynamic>{};
+    var i = 0;
+    colData.forEach((dynamic record) {
+      dataIndex[i] = record;
+      ++i;
+    });
+    // sort the index map from values
+    final sortedKeys = dataIndex.keys.toList(growable: false)
+      ..sort((k1, k2) => (dataIndex[k1] as dynamic)
+          .compareTo(dataIndex[k2] as dynamic) as int);
+    final sortedMap = LinkedHashMap<int, dynamic>.fromIterable(sortedKeys,
+        key: (dynamic k) => k as int, value: (dynamic k) => dataIndex[k]);
+    final order = sortedMap.keys;
+    // rebuild the dataset in order
+    final _newMatrix = <List<dynamic>>[];
+    for (final i in order) {
+      _newMatrix.add(_matrix.data[i]);
+    }
+    if (!inPlace) {
+      return DataFrame._copyWithMatrix(this, _newMatrix);
+    } else {
+      _matrix.data = _newMatrix;
+    }
+    return null;
   }
 
   /*   DataFrame _sort(String colName,
