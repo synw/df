@@ -61,8 +61,9 @@ class DataMatrix {
       try {
         val = row[columnIndice] as T;
       } catch (e) {
-        throw TypeConversionException(
-            "Can not convert record $val to type $T $e");
+        rethrow;
+        //throw TypeConversionException(
+        //    "Can not convert record $val to type $T $e");
       }
       dataFound.add(val);
       ++i;
