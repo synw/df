@@ -161,12 +161,33 @@ class DataFrame {
   // ********* filter operations **********
 
   /// Limit the data
-  void limit(int max, {int startIndex = 0}) =>
-      _matrix.data = _matrix.data.sublist(startIndex, startIndex + max);
+  void limit(int max, {int startIndex = 0}) {
+    var n = startIndex + max;
+    final dflen = _matrix.data.length;
+    if (n > dflen) {
+      if (startIndex == 0) {
+        return;
+      }
+      if (max > dflen) {
+        n = dflen;
+      }
+    }
+    _matrix.data = _matrix.data.sublist(startIndex, n);
+  }
 
   /// Get a new dataframe with limited data
   DataFrame limit_(int max, {int startIndex = 0}) {
-    final _newMatrix = _matrix.data.sublist(startIndex, startIndex + max);
+    var n = startIndex + max;
+    final dflen = _matrix.data.length;
+    if (n > _matrix.data.length) {
+      if (startIndex == 0) {
+        return this;
+      }
+      if (max > dflen) {
+        n = dflen;
+      }
+    }
+    final _newMatrix = _matrix.data.sublist(startIndex, n);
     return DataFrame._copyWithMatrix(this, _newMatrix);
   }
 
