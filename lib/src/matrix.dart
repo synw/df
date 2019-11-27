@@ -1,7 +1,5 @@
 import 'package:ml_linalg/vector.dart';
 
-import 'exceptions.dart';
-
 /// A class to manage the data inside the [DataFrame]
 class DataMatrix {
   /// The dataset
