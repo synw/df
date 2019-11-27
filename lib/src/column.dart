@@ -25,11 +25,13 @@ class DataFrameColumn {
       try {
         if (dateFormat != null) {
           Jiffy(record.toString(), dateFormat);
+          type = DateTime;
         } else {
-          DateTime.tryParse(record.toString());
+          final d = DateTime.tryParse(record.toString());
+          if (d != null) {
+            type = DateTime;
+          }
         }
-
-        type = DateTime;
       } catch (_) {
         type = String;
       }

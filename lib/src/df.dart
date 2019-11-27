@@ -83,7 +83,7 @@ class DataFrame {
           break;
         case DateTime:
           if (dateFormat != null) {
-            colValues.add(Jiffy(v.toString(), dateFormat));
+            colValues.add(Jiffy(v.toString(), dateFormat).dateTime);
           } else {
             DateTime.tryParse(v.toString());
           }
