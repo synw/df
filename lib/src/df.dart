@@ -168,9 +168,7 @@ class DataFrame {
       if (startIndex == 0) {
         return;
       }
-      if (max > dflen) {
-        n = dflen;
-      }
+      n = dflen;
     }
     _matrix.data = _matrix.data.sublist(startIndex, n);
   }
@@ -183,9 +181,7 @@ class DataFrame {
       if (startIndex == 0) {
         return this;
       }
-      if (max > dflen) {
-        n = dflen;
-      }
+      n = dflen;
     }
     final _newMatrix = _matrix.data.sublist(startIndex, n);
     return DataFrame._copyWithMatrix(this, _newMatrix);
@@ -345,37 +341,6 @@ class DataFrame {
     }
     return null;
   }
-
-  /*   DataFrame _sort(String colName,
-      {bool inPlace = false, bool reverse = false}) {
-    assert(colName != null);
-    _isSortedBy = colName;
-    final colIndice = _indiceForColumn(colName);
-    final order = _sortIndexForIndice(colIndice);
-    var _newMatrix = <List<dynamic>>[];
-    for (final indice in order) {
-      _newMatrix.add(_matrix.data[indice]);
-    }
-    if (reverse) {
-      _newMatrix = _newMatrix.reversed.toList();
-    }
-    if (!inPlace) {
-      return DataFrame._copyWithMatrix(this, _newMatrix);
-    } else {
-      _matrix.data = _newMatrix;
-    }
-    return null;
-  }
-
-  List<int> _sortIndexForIndice(int indice) {
-    final order = <int>[];
-    final values = _columnDataWithIndex(indice);
-    final orderedValues = values.keys.toList()..sort();
-    for (final value in orderedValues) {
-      order.add(values[value]);
-    }
-    return order;
-  }*/
 
   int _indiceForColumn(String colName) {
     int ind;
