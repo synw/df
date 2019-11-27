@@ -8,11 +8,11 @@ environment:
   sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
-  meta: ^1.1.6
-  pedantic: ^1.6.0
-  extra_pedantic: ^1.1.1+2
-  ml_linalg: ^12.3.0
+  meta: ^1.1.7
+  pedantic: ^1.7.0
+  extra_pedantic: ^1.1.1+3
+  ml_linalg: ^12.7.1
 
 dev_dependencies:
   test: ^1.6.5
-  test_coverage: ^0.3.0+1
+  test_coverage: ^0.4.0
