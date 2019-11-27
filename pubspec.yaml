@@ -5,7 +5,7 @@ homepage: https://github.com/synw/df
 version: 0.0.1
 
 environment:
-  sdk: ">=2.3.0 <3.0.0"
+  sdk: ">=2.4.0 <3.0.0"
 
 dependencies:
   meta: ^1.1.7
