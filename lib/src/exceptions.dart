@@ -1,12 +1,3 @@
-/// An exception for type conversions errors
-class TypeConversionException implements Exception {
-  /// Default construtor
-  TypeConversionException(this.message);
-
-  /// The error message
-  final String message;
-}
-
 /// An exception for a column not found
 class ColumnNotFoundException implements Exception {
   /// Default construtor
