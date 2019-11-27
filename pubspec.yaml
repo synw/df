@@ -1,8 +1,8 @@
 name: df
-description: A dataframe for Dart
+description: A dataframe for Dart. An abstraction to help manipulating and analysing data
 author: synw <ansterj@gmail.com>
 homepage: https://github.com/synw/df
-version: 0.0.1
+version: 0.1.0
 
 environment:
   sdk: ">=2.4.0 <3.0.0"
