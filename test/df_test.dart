@@ -44,7 +44,8 @@ void main() {
 
   test("csv", () async {
     baseDf = await DataFrame.fromCsv("example/dataset/stocks.csv");
-    df = await DataFrame.fromCsv("test/data/data.csv", verbose: true)
+    df = await DataFrame.fromCsv("test/data/data.csv",
+        dateFormat: "MMM dd yyyy", verbose: true)
       ..show();
     expect(df.length, 2);
     expect(df.columnsNames, <String>["symbol", "date", "price", "n"]);
@@ -139,6 +140,16 @@ void main() {
     } catch (e) {
       expect(e.toString(),
           "type 'int' is not a subtype of type 'double' in type cast");
+    }
+    try {
+      DataFrameColumn.inferFromRecord("1", null);
+    } catch (e) {
+      expect(e is AssertionError, true);
+    }
+    try {
+      DataFrameColumn.inferFromRecord(null, "n");
+    } catch (e) {
+      expect(e is AssertionError, true);
     }
   });
 
