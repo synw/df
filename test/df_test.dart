@@ -121,7 +121,8 @@ void main() {
     try {
       df.colRecords<double>("col1");
     } catch (e) {
-      expect(e is TypeConversionException, true);
+      expect(e.toString(),
+          "type 'int' is not a subtype of type 'double' in type cast");
     }
   });
 
