@@ -7,26 +7,29 @@ void main() {
   DataFrame df;
 
   test("from rows", () async {
+    final date = DateTime.now();
     final rows = <Map<String, dynamic>>[
-      <String, dynamic>{"col1": "a", "col2": "b"},
-      <String, dynamic>{"col1": "a", "col2": "b"},
+      <String, dynamic>{"col1": "a", "col2": 1, "col3": 1.0, "col4": date},
+      <String, dynamic>{"col1": "b", "col2": 2, "col3": 2.0, "col4": date},
     ];
     df = DataFrame.fromRows(rows);
     expect(df.length, 2);
-    expect(df.columnsNames, <String>["col1", "col2"]);
+    expect(df.columnsNames, <String>["col1", "col2", "col3", "col4"]);
     expect(df.rows, rows);
     expect(df.dataset, <dynamic>[
-      <dynamic>["a", "b"],
-      <dynamic>["a", "b"]
+      <dynamic>["a", 1, 1.0, date],
+      <dynamic>["b", 2, 2.0, date]
     ]);
-    expect(df.colRecords<String>("col1"), <String>["a", "a"]);
+    expect(df.colRecords<String>("col1"), <String>["a", "b"]);
     expect(df.colRecords<String>("col1", limit: 1), <String>["a"]);
     final cols = <DataFrameColumn>[
       DataFrameColumn(name: "col1", type: String),
-      DataFrameColumn(name: "col2", type: String),
+      DataFrameColumn(name: "col2", type: int),
+      DataFrameColumn(name: "col3", type: double),
+      DataFrameColumn(name: "col4", type: DateTime),
     ];
     expect(df.columns, cols);
-
+    // errors
     try {
       df = DataFrame.fromRows(null);
     } catch (e) {
@@ -40,12 +43,13 @@ void main() {
   });
 
   test("csv", () async {
-    df = await DataFrame.fromCsv("example/dataset/stocks.csv")
+    baseDf = await DataFrame.fromCsv("example/dataset/stocks.csv");
+    df = await DataFrame.fromCsv("test/data/data.csv", verbose: true)
       ..show();
-    expect(df.length, 560);
-    expect(df.columnsNames, <String>["symbol", "date", "price"]);
-    baseDf = df.copy_();
-    expect(df.length, baseDf.length);
+    expect(df.length, 2);
+    expect(df.columnsNames, <String>["symbol", "date", "price", "n"]);
+    final df2 = df.copy_();
+    expect(df2.length, df.length);
 
     df = await DataFrame.fromCsv("/wrong/path").catchError((dynamic e) {
       expect(e.runtimeType.toString() == "FileNotFoundException", true);
@@ -65,6 +69,12 @@ void main() {
     expect(df.length, 30);
     final df2 = df.limit_(30);
     expect(df2.length, 30);
+    df = df2.limit_(100);
+    expect(df.length, 30);
+    df = df2.limit_(100, startIndex: 10);
+    expect(df.length, 20);
+    df.limit(30);
+    expect(df.length, 20);
   });
 
   test("count", () async {
@@ -93,6 +103,12 @@ void main() {
     expect(df.length, 1);
     df.removeLastRow();
     expect(df.length, 0);
+    df = DataFrame.fromRows(rows);
+    final recs = <List<int>>[
+      [2, 3]
+    ];
+    df.addRecords(recs);
+    expect(df.length, 3);
   });
 
   test("calc", () async {
@@ -126,6 +142,31 @@ void main() {
     }
   });
 
+  test("sort", () async {
+    final rows = <Map<String, dynamic>>[
+      <String, dynamic>{"col1": 1, "col2": 4},
+      <String, dynamic>{"col1": 2, "col2": 3},
+      <String, dynamic>{"col1": 3, "col2": 2},
+      <String, dynamic>{"col1": 4, "col2": 1},
+    ];
+    df = DataFrame.fromRows(rows)
+      ..head()
+      ..sort("col2");
+    expect(df.colRecords<int>("col1"), <int>[4, 3, 2, 1]);
+    final df2 = df.sort_("col1");
+    expect(df2.colRecords<int>("col1"), <int>[1, 2, 3, 4]);
+    try {
+      df.sort_("wrong_col");
+    } catch (e) {
+      expect(e is ColumnNotFoundException, true);
+    }
+    try {
+      df.sort_(null);
+    } catch (e) {
+      expect(e is AssertionError, true);
+    }
+  });
+
   test("column", () async {
     final rows = <Map<String, dynamic>>[
       <String, dynamic>{"col1": 1, "col2": 2},
@@ -134,5 +175,25 @@ void main() {
     df = DataFrame.fromRows(rows)..head();
     final h = df.columns[0].hashCode;
     expect(h, "col1".hashCode);
+    expect(df.columnsIndices, <int, String>{0: "col1", 1: "col2"});
+    expect(df.columnIndice("col1"), 0);
+  });
+
+  test("set", () async {
+    final edf = ExtendedDf();
+    final columns = <DataFrameColumn>[
+      DataFrameColumn(name: "col1", type: int),
+      DataFrameColumn(name: "col2", type: double),
+    ];
+    edf.setColumns(columns);
+    expect(edf.columns, columns);
+    final dataset = [
+      <dynamic>[1, 1.0],
+      <dynamic>[2, 2.0]
+    ];
+    edf.dataset = dataset;
+    expect(edf.dataset, dataset);
   });
 }
+
+class ExtendedDf extends DataFrame {}
