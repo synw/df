@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:meta/meta.dart';
+import 'package:jiffy/jiffy.dart';
 
 import '../df.dart';
 import 'column.dart';
@@ -67,7 +68,8 @@ class DataFrame {
   }
 
   static List<dynamic> _parseLine(
-      List<dynamic> vals, List<DataFrameColumn> columnsNames) {
+      List<dynamic> vals, List<DataFrameColumn> columnsNames,
+      {String dateFormat}) {
     var vi = 0;
     final colValues = <dynamic>[];
     vals.forEach((dynamic v) {
@@ -80,7 +82,12 @@ class DataFrame {
           colValues.add(double.tryParse(v.toString()));
           break;
         case DateTime:
-          colValues.add(DateTime.tryParse(v.toString()));
+          if (dateFormat != null) {
+            colValues.add(Jiffy(v.toString(), dateFormat));
+          } else {
+            DateTime.tryParse(v.toString());
+          }
+
           break;
         default:
           colValues.add(v);
@@ -91,7 +98,8 @@ class DataFrame {
   }
 
   /// Build a dataframe from a csv file
-  static Future<DataFrame> fromCsv(String path, {bool verbose = false}) async {
+  static Future<DataFrame> fromCsv(String path,
+      {String dateFormat, bool verbose = false}) async {
     final file = File(path);
     if (!file.existsSync()) {
       throw FileNotFoundException("File not found: $path");
@@ -113,12 +121,13 @@ class DataFrame {
         var vi = 0;
         if (i == 2) {
           vals.forEach((v) {
-            final col = DataFrameColumn.inferFromRecord(v, _colNames[vi]);
+            final col = DataFrameColumn.inferFromRecord(v, _colNames[vi],
+                dateFormat: dateFormat);
             df._columns.add(col);
             ++vi;
           });
         }
-        final colValues = _parseLine(vals, df._columns);
+        final colValues = _parseLine(vals, df._columns, dateFormat: dateFormat);
         df._matrix.data.add(colValues);
       }
       ++i;

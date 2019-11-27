@@ -1,3 +1,4 @@
+import 'package:jiffy/jiffy.dart';
 import 'package:meta/meta.dart';
 
 /// A data frame column
@@ -12,7 +13,7 @@ class DataFrameColumn {
   Type type;
 
   /// Infer the column types from a datapoint
-  DataFrameColumn.inferFromRecord(String record, this.name)
+  DataFrameColumn.inferFromRecord(String record, this.name, {String dateFormat})
       : assert(name != null),
         assert(record != null) {
     type = String;
@@ -20,8 +21,18 @@ class DataFrameColumn {
       type = int;
     } else if (double.tryParse(record) != null) {
       type = double;
-    } else if (DateTime.tryParse(record) != null) {
-      type = DateTime;
+    } else {
+      try {
+        if (dateFormat != null) {
+          Jiffy(record.toString(), dateFormat);
+        } else {
+          DateTime.tryParse(record.toString());
+        }
+
+        type = DateTime;
+      } catch (_) {
+        type = String;
+      }
     }
   }
 
