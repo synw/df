@@ -3,14 +3,14 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:meta/meta.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:meta/meta.dart';
 
-import '../df.dart';
 import 'column.dart';
 import 'exceptions.dart';
 import 'info.dart';
 import 'matrix.dart';
+import 'type.dart';
 
 /// The main dataframe class
 class DataFrame {
@@ -69,7 +69,9 @@ class DataFrame {
 
   static List<dynamic> _parseLine(
       List<dynamic> vals, List<DataFrameColumn> columnsNames,
-      {String dateFormat}) {
+      {String dateFormat,
+      String timestampCol,
+      TimestampFormat timestampFormat}) {
     var vi = 0;
     final colValues = <dynamic>[];
     vals.forEach((dynamic v) {
@@ -85,9 +87,23 @@ class DataFrame {
           if (dateFormat != null) {
             colValues.add(Jiffy(v.toString(), dateFormat).dateTime);
           } else {
-            DateTime.tryParse(v.toString());
+            if (timestampCol == columnsNames[vi].name) {
+              DateTime d;
+              if (timestampFormat == TimestampFormat.seconds) {
+                d = DateTime.fromMillisecondsSinceEpoch(
+                    int.parse(v.toString()) * 1000);
+              } else if (timestampFormat == TimestampFormat.milliseconds) {
+                d = DateTime.fromMillisecondsSinceEpoch(
+                    int.parse(v.toString()));
+              } else if (timestampFormat == TimestampFormat.microseconds) {
+                d = DateTime.fromMicrosecondsSinceEpoch(
+                    int.parse(v.toString()));
+              }
+              colValues.add(d);
+            } else {
+              colValues.add(DateTime.tryParse(v.toString()));
+            }
           }
-
           break;
         default:
           colValues.add(v);
@@ -99,7 +115,10 @@ class DataFrame {
 
   /// Build a dataframe from a csv file
   static Future<DataFrame> fromCsv(String path,
-      {String dateFormat, bool verbose = false}) async {
+      {String dateFormat,
+      String timestampCol,
+      TimestampFormat timestampFormat = TimestampFormat.milliseconds,
+      bool verbose = false}) async {
     final file = File(path);
     if (!file.existsSync()) {
       throw FileNotFoundException("File not found: $path");
@@ -121,13 +140,21 @@ class DataFrame {
         var vi = 0;
         if (i == 2) {
           vals.forEach((v) {
-            final col = DataFrameColumn.inferFromRecord(v, _colNames[vi],
-                dateFormat: dateFormat);
+            DataFrameColumn col;
+            if (_colNames[vi] == timestampCol) {
+              col = DataFrameColumn(name: _colNames[vi], type: DateTime);
+            } else {
+              col = DataFrameColumn.inferFromRecord(v, _colNames[vi],
+                  dateFormat: dateFormat);
+            }
             df._columns.add(col);
             ++vi;
           });
         }
-        final colValues = _parseLine(vals, df._columns, dateFormat: dateFormat);
+        final colValues = _parseLine(vals, df._columns,
+            dateFormat: dateFormat,
+            timestampCol: timestampCol,
+            timestampFormat: timestampFormat);
         df._matrix.data.add(colValues);
       }
       ++i;

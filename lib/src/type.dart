@@ -14,3 +14,5 @@ dynamic castTypeForValue(dynamic value, Type colType) {
   }
   return v;
 }
+
+enum TimestampFormat { seconds, milliseconds, microseconds }
