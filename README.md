@@ -50,7 +50,7 @@ Remove data:
    df.removeFirstRow();
    df.removeLastRow();
    // remove the third row
-   df.removeAt(3);
+   df.removeRowAt(2);
    // limit the dataframe to 100 rows starting from index 30
    df.limit(100, startIndex: 30);
    ```
