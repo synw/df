@@ -43,12 +43,41 @@ void main() {
   });
 
   test("csv", () async {
-    baseDf = await DataFrame.fromCsv("example/dataset/stocks.csv");
-    df = await DataFrame.fromCsv("test/data/data.csv",
+    // date
+    df = await DataFrame.fromCsv("test/data/data_date.csv",
         dateFormat: "MMM dd yyyy", verbose: true)
       ..show();
     expect(df.length, 2);
     expect(df.columnsNames, <String>["symbol", "date", "price", "n"]);
+
+    // date iso
+    df = await DataFrame.fromCsv("test/data/data_date_iso.csv", verbose: true)
+      ..show();
+    expect(df.length, 2);
+    expect(df.columnsNames, <String>["symbol", "date", "price", "n"]);
+
+    // timestamp
+    df = await DataFrame.fromCsv("test/data/data_timestamp_ms.csv",
+        timestampCol: "timestamp", verbose: true)
+      ..show();
+    expect(df.columnsNames, <String>["symbol", "price", "n", "timestamp"]);
+
+    // timestamp microseconds
+    df = await DataFrame.fromCsv("test/data/data_timestamp_mi.csv",
+        timestampCol: "timestamp",
+        timestampFormat: TimestampFormat.microseconds,
+        verbose: true)
+      ..show();
+    expect(df.columnsNames, <String>["symbol", "price", "n", "timestamp"]);
+
+    // timestamp seconds
+    df = await DataFrame.fromCsv("test/data/data_timestamp_s.csv",
+        timestampCol: "timestamp",
+        timestampFormat: TimestampFormat.seconds,
+        verbose: true)
+      ..show();
+    expect(df.columnsNames, <String>["symbol", "price", "n", "timestamp"]);
+
     final df2 = df.copy_();
     expect(df2.length, df.length);
 
@@ -59,6 +88,7 @@ void main() {
   });
 
   test("subset", () async {
+    baseDf = await DataFrame.fromCsv("example/dataset/stocks.csv");
     df = baseDf..subset(0, 30);
     expect(df.length, 30);
     final df2 = df.subset_(0, 30);
@@ -188,6 +218,16 @@ void main() {
     expect(h, "col1".hashCode);
     expect(df.columnsIndices, <int, String>{0: "col1", 1: "col2"});
     expect(df.columnIndice("col1"), 0);
+  });
+
+  test("type inference", () async {
+    var r = DataFrameColumn.inferFromRecord("0", "record");
+    expect(r.type, int);
+    r = DataFrameColumn.inferFromRecord("foo", "record");
+    expect(r.type, String);
+    r = DataFrameColumn.inferFromRecord(
+        DateTime.now().toIso8601String(), "record");
+    expect(r.type, DateTime);
   });
 
   test("set", () async {
