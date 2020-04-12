@@ -14,6 +14,16 @@ From csv:
    final df = await DataFrame.fromCsv("dataset/stocks.csv");
    ```
 
+Optional parameters:
+
+**`dateFormat`**: the string format of the date: [reference](https://pub.dev/documentation/intl/latest/intl/DateFormat-class.html). Ex: `MMM dd yyyy`
+
+**`timestampCol`**: the column to be treated as a timestamp. Ex: `timestamp`
+
+**`timestampFormat`**: the format of the timestamp: seconds, milliseconds or microseconds. Ex: `TimestampFormat.microseconds`
+
+**`verbose`**: set to true to print some info
+
 From records:
 
    ```dart
@@ -41,7 +51,10 @@ From records:
 Add data:
 
    ```dart
+   // add a row
    df.addRow(<String,dynamic>{"col1": 1, "col2": 2.0});
+   // add a line of records
+   df.addRecord(<dynamic>[1, 2.0]);
    ```
 
 Remove data:
