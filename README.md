@@ -14,7 +14,7 @@ From csv:
    final df = await DataFrame.fromCsv("dataset/stocks.csv");
    ```
 
-Optional parameters:
+Note: the type of the records are infered from the data. The first line of the csv must contains the headers for the column names. Optional parameters:
 
 **`dateFormat`**: the string format of the date: [reference](https://pub.dev/documentation/intl/latest/intl/DateFormat-class.html). Ex: `MMM dd yyyy`
 
