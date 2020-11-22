@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:df/src/util/csv_parser.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:meta/meta.dart';
 
@@ -58,18 +59,13 @@ class DataFrame {
   DataFrame.fromRows(List<Map<String, dynamic>> rows)
       : assert(rows != null),
         assert(rows.isNotEmpty) {
-    // create _columns from the first datapint
+    // create _columns from the first datapoint
     rows[0].forEach((k, dynamic v) {
       final t = v.runtimeType as Type;
       _columns.add(DataFrameColumn(name: k, type: t));
     });
     // fill the data
     rows.forEach((row) => _matrix.addRow(row, _columnsIndices()));
-  }
-
-  static List<dynamic> _parseLine(
-      String line) {
-    return line.split(",");
   }
 
   static List<dynamic> _parseVals(
@@ -129,7 +125,7 @@ class DataFrame {
     List<String> _colNames;
     await stream.forEach((line) {
       //print('line $i: $line');
-      final vals = _parseLine(line);
+      final vals = CsvParser.parseLine(line);
       if (i == 1) {
         // set columns names
         _colNames = vals;

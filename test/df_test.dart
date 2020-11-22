@@ -263,7 +263,7 @@ void main() {
     expect(df.rows.toList(), [{"a": 1, "b": 2}]);
   });
 
-  test("escape quotes", () async {
+  test("escape quotes are consumed", () async {
     final inputStream = Stream<String>.fromIterable([
       "a,\"b\"",
       "1,\"2\""
@@ -272,6 +272,27 @@ void main() {
     // Escape quites should be consumed during parsing
     expect(df.columnsNames, ["a","b"]);
     expect(df.rows.toList(), [{"a": 1, "b": 2}]);
+  });
+
+  test("commas and double quotes are properly escaped", () async {
+    var inputStream = Stream<String>.fromIterable([
+      "a,\"b,c\"",
+      "1,\"2,3\""
+    ]);
+    df = await DataFrame.fromStream(inputStream);
+    // Escape quotes should be consumed during parsing
+    expect(df.columnsNames, ["a","b,c"]);
+    expect(df.rows.toList(), [{"a": 1, "b,c": "2,3"}]);
+
+    inputStream = Stream<String>.fromIterable([
+      "a,\"b,c\"",
+      "\"\"\"They may say I'm a dreamer, but I'm not\"\"\",\"2,3\""
+    ]);
+    df = await DataFrame.fromStream(inputStream);
+    // within an escaped sequence, double quotes can be included by replacing
+    // them with two double quotes - RFC4180-2.7
+    expect(df.columnsNames, ["a","b,c"]);
+    expect(df.rows.toList(), [{"a": "\"They may say I'm a dreamer, but I'm not\"", "b,c": "2,3"}]);
   });
 }
 
