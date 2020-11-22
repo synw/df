@@ -85,6 +85,13 @@ void main() {
       expect(e.runtimeType.toString() == "FileNotFoundException", true);
       expect(e.message, 'File not found: /wrong/path');
     });
+
+    df = await DataFrame.fromCsv("test/data/data_timestamp_s.csv",
+        timestampCol: "timestamp",
+        timestampFormat: TimestampFormat.seconds,
+        verbose: true)
+      ..show();
+    expect(df.columnsNames, <String>["symbol", "price", "n", "timestamp"]);
   });
 
   test("subset", () async {
@@ -244,6 +251,16 @@ void main() {
     ];
     edf.dataset = dataset;
     expect(edf.dataset, dataset);
+  });
+
+  test("from stream", () async {
+    final inputStream = Stream<String>.fromIterable([
+      "a,b",
+      "1,2"
+    ]);
+    df = await DataFrame.fromStream(inputStream);
+    expect(df.columnsNames, ["a","b"]);
+    expect(df.rows.toList(), [{"a": 1, "b": 2}]);
   });
 }
 
