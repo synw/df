@@ -262,6 +262,17 @@ void main() {
     expect(df.columnsNames, ["a","b"]);
     expect(df.rows.toList(), [{"a": 1, "b": 2}]);
   });
+
+  test("escape quotes", () async {
+    final inputStream = Stream<String>.fromIterable([
+      "a,\"b\"",
+      "1,\"2\""
+    ]);
+    df = await DataFrame.fromStream(inputStream);
+    // Escape quites should be consumed during parsing
+    expect(df.columnsNames, ["a","b"]);
+    expect(df.rows.toList(), [{"a": 1, "b": 2}]);
+  });
 }
 
 class ExtendedDf extends DataFrame {}

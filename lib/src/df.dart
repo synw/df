@@ -68,6 +68,11 @@ class DataFrame {
   }
 
   static List<dynamic> _parseLine(
+      String line) {
+    return line.split(",");
+  }
+
+  static List<dynamic> _parseVals(
       List<dynamic> vals, List<DataFrameColumn> columnsNames,
       {String dateFormat,
       String timestampCol,
@@ -124,7 +129,7 @@ class DataFrame {
     List<String> _colNames;
     await stream.forEach((line) {
       //print('line $i: $line');
-      final vals = line.split(",");
+      final vals = _parseLine(line);
       if (i == 1) {
         // set columns names
         _colNames = vals;
@@ -143,7 +148,7 @@ class DataFrame {
             ++vi;
           });
         }
-        final colValues = _parseLine(vals, df._columns,
+        final colValues = _parseVals(vals, df._columns,
             dateFormat: dateFormat,
             timestampCol: timestampCol,
             timestampFormat: timestampFormat);
