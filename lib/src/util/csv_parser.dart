@@ -32,7 +32,8 @@ class CsvParser {
   static int parseField(
       String line,
       StringBuffer record,
-      int i) {
+      int startIndex) {
+    var i = startIndex;
     while (i < line.length && line[i] != ",") {
       if (line[i] == "\"") {
         throw ArgumentError("A field contained an unescaped double quote. "
@@ -49,7 +50,8 @@ class CsvParser {
   static int parseEscapedField(
       String line,
       StringBuffer record,
-      int i) {
+      int startIndex) {
+    var i = startIndex;
     assert(line[i]=="\"", "parseEscapedField was called on an unescaped field at"
         " char $i of line $line");
     // increment past the first char (a double quote)
