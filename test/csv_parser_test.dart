@@ -65,6 +65,11 @@ void main() {
     record = StringBuffer();
     expect(CsvParser.parseLine(line), <dynamic>["a", "bc", "def"]);
 
+    // parse a generic line with a blank final field
+    line = "a,b,";
+    record = StringBuffer();
+    expect(CsvParser.parseLine(line), <dynamic>["a", "b", ""]);
+
     // parse a line with basic escaping
     line = "a,\"bc\",\"def\"";
     record = StringBuffer();

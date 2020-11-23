@@ -24,6 +24,8 @@ class CsvParser {
       // increment past the current char (a comma or EOL)
       i++;
     }
+    // special case for a line that ends with comma (ie a blank field)
+    if (line[line.length - 1] == ",") records.add("");
     return records;
   }
 
