@@ -25,9 +25,9 @@ void main() {
     // a double quote in an unescaped field throws an error
     record = StringBuffer();
     line = "a,b\",c";
-    expect(() => CsvParser.parseField(line, record, 2), throwsA(isA<ArgumentError>()));
+    expect(() => CsvParser.parseField(line, record, 2),
+        throwsA(isA<FormatException>()));
   });
-
 
   test("test parseEscapedField", () {
     StringBuffer record;
@@ -50,10 +50,11 @@ void main() {
     expect(CsvParser.parseEscapedField(line, record, 2), 7);
     expect(record.toString(), "b\"");
 
-    // An ArgumentError is thrown if there's a hanging preceding escape quote
+    // A FormatException is thrown if there's a hanging escape quote
     line = "a,\"b,c";
     record = StringBuffer();
-    expect(() => CsvParser.parseEscapedField(line, record, 2), throwsA(isA<ArgumentError>()));
+    expect(() => CsvParser.parseEscapedField(line, record, 2),
+        throwsA(isA<FormatException>()));
   });
 
   test("test parseLine", () {
@@ -88,6 +89,6 @@ void main() {
     // parse a line with an unclosed escape quote
     line = "a,\"b\"\",c";
     record = StringBuffer();
-    expect(() => CsvParser.parseLine(line), throwsA(isA<ArgumentError>()));
+    expect(() => CsvParser.parseLine(line), throwsA(isA<FormatException>()));
   });
 }

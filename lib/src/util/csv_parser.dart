@@ -3,11 +3,9 @@
 ///
 /// See RFC4180 for details on CSV standard
 class CsvParser {
-
   /// Takes a single line and parses it into a list of values according to the
   /// csv standard (see RFC4180)
-  static List<String> parseLine(
-      String line) {
+  static List<String> parseLine(String line) {
     final records = <String>[];
     var i = 0;
     StringBuffer record;
@@ -31,14 +29,11 @@ class CsvParser {
 
   /// Parse and write chars to buff until a comma is reached, then return the
   /// the index after the last char consumed
-  static int parseField(
-      String line,
-      StringBuffer record,
-      int startIndex) {
+  static int parseField(String line, StringBuffer record, int startIndex) {
     var i = startIndex;
     while (i < line.length && line[i] != ",") {
       if (line[i] == "\"") {
-        throw ArgumentError("A field contained an unescaped double quote. "
+        throw FormatException("A field contained an unescaped double quote. "
             "See section 2.5 of https://tools.ietf.org/html/rfc4180.\n"
             "character $i of line:\n$line\n");
       }
@@ -50,11 +45,11 @@ class CsvParser {
 
   /// Like _parseField, but with support for character escaping
   static int parseEscapedField(
-      String line,
-      StringBuffer record,
-      int startIndex) {
+      String line, StringBuffer record, int startIndex) {
     var i = startIndex;
-    assert(line[i]=="\"", "parseEscapedField was called on an unescaped field at"
+    assert(
+        line[i] == "\"",
+        "parseEscapedField was called on an unescaped field at"
         " char $i of line $line");
     // increment past the first char (a double quote)
     i++;
@@ -73,7 +68,8 @@ class CsvParser {
       i++;
     }
     // reached end of line without closing the escape quote
-    throw ArgumentError("A field contained an escape quote without a closing escape quote. "
+    throw FormatException(
+        "A field contained an escape quote without a closing escape quote. "
         "See section 2.5 of https://tools.ietf.org/html/rfc4180.\n"
         "character $i of line:\n$line\n");
   }
