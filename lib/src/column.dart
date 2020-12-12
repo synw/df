@@ -40,7 +40,7 @@ class DataFrameColumn {
 
   @override
   String toString() {
-    return "$name ($type)";
+    return '$name ($type)';
   }
 
   @override
