@@ -246,14 +246,13 @@ void main() {
     expect(edf.dataset, dataset);
   });
 
-  test("from stream", () async {
-    final inputStream = Stream<String>.fromIterable([
-      "a,b",
-      "1,2"
-    ]);
+  test('from stream', () async {
+    final inputStream = Stream<String>.fromIterable(['a,b', '1,2']);
     df = await DataFrame.fromStream(inputStream);
-    expect(df.columnsNames, ["a","b"]);
-    expect(df.rows.toList(), [{"a": 1, "b": 2}]);
+    expect(df.columnsNames, ['a', 'b']);
+    expect(df.rows.toList(), [
+      {'a': 1, 'b': 2}
+    ]);
   });
 }
 

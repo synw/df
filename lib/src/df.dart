@@ -165,7 +165,7 @@ class DataFrame {
       bool verbose = false}) async {
     final file = File(path);
     if (!file.existsSync()) {
-      throw FileNotFoundException("File not found: $path");
+      throw FileNotFoundException('File not found: $path');
     }
 
     return fromStream(
