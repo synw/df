@@ -113,24 +113,16 @@ class DataFrame {
     return colValues;
   }
 
-  /// Build a dataframe from a csv file
-  static Future<DataFrame> fromCsv(String path,
+  /// Build a dataframe from a utf8 encoded stream of comma separated strings
+  static Future<DataFrame> fromStream(Stream<String> stream,
       {String dateFormat,
       String timestampCol,
       TimestampFormat timestampFormat = TimestampFormat.milliseconds,
       bool verbose = false}) async {
-    final file = File(path);
-    if (!file.existsSync()) {
-      throw FileNotFoundException('File not found: $path');
-    }
     final df = DataFrame();
     var i = 1;
     List<String> _colNames;
-    await file
-        .openRead()
-        .transform<String>(utf8.decoder)
-        .transform<String>(const LineSplitter())
-        .forEach((line) {
+    await stream.forEach((line) {
       //print('line $i: $line');
       final vals = line.split(',');
       if (i == 1) {
@@ -163,6 +155,29 @@ class DataFrame {
       print('Parsed ${df._matrix.data.length} rows');
     }
     return df;
+  }
+
+  /// Build a dataframe from a csv file
+  static Future<DataFrame> fromCsv(String path,
+      {String dateFormat,
+      String timestampCol,
+      TimestampFormat timestampFormat = TimestampFormat.milliseconds,
+      bool verbose = false}) async {
+    final file = File(path);
+    if (!file.existsSync()) {
+      throw FileNotFoundException('File not found: $path');
+    }
+
+    return fromStream(
+      file
+          .openRead()
+          .transform<String>(utf8.decoder)
+          .transform<String>(const LineSplitter()),
+      dateFormat: dateFormat,
+      timestampCol: timestampCol,
+      timestampFormat: timestampFormat,
+      verbose: verbose,
+    );
   }
 
   DataFrame._copyWithMatrix(DataFrame df, List<List<dynamic>> matrix) {
