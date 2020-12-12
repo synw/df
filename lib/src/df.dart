@@ -117,9 +117,9 @@ class DataFrame {
   /// Build a dataframe from a utf8 encoded stream of comma separated strings
   static Future<DataFrame> fromStream(Stream<String> stream,
       {String dateFormat,
-        String timestampCol,
-        TimestampFormat timestampFormat = TimestampFormat.milliseconds,
-        bool verbose = false}) async {
+      String timestampCol,
+      TimestampFormat timestampFormat = TimestampFormat.milliseconds,
+      bool verbose = false}) async {
     final df = DataFrame();
     var i = 1;
     List<String> _colNames;
@@ -153,7 +153,7 @@ class DataFrame {
       ++i;
     });
     if (verbose) {
-      print("Parsed ${df._matrix.data.length} rows");
+      print('Parsed ${df._matrix.data.length} rows');
     }
     return df;
   }
@@ -166,14 +166,14 @@ class DataFrame {
       bool verbose = false}) async {
     final file = File(path);
     if (!file.existsSync()) {
-      throw FileNotFoundException("File not found: $path");
+      throw FileNotFoundException('File not found: $path');
     }
 
     return fromStream(
       file
-        .openRead()
-        .transform<String>(utf8.decoder)
-        .transform<String>(const LineSplitter()),
+          .openRead()
+          .transform<String>(utf8.decoder)
+          .transform<String>(const LineSplitter()),
       dateFormat: dateFormat,
       timestampCol: timestampCol,
       timestampFormat: timestampFormat,
@@ -248,10 +248,10 @@ class DataFrame {
   int countNulls_(String colName,
       {List<dynamic> nullValues = const <dynamic>[
         null,
-        "null",
-        "nan",
-        "NULL",
-        "N/A"
+        'null',
+        'nan',
+        'NULL',
+        'N/A'
       ]}) {
     final n = _matrix.countForValues(_indiceForColumn(colName), nullValues);
     return n;
@@ -323,13 +323,13 @@ class DataFrame {
     }
     final rows = _matrix.data.sublist(0, l);
     _info.printRows(rows);
-    print("$length rows");
+    print('$length rows');
   }
 
   /// Print info and sample data
   void show([int lines = 5]) {
     print(
-        "${_columns.length} columns and $length rows: ${columnsNames.join(", ")}");
+        '${_columns.length} columns and $length rows: ${columnsNames.join(', ')}');
     var l = lines;
     if (length < lines) {
       l = length;
@@ -405,7 +405,7 @@ class DataFrame {
       ++i;
     }
     if (ind == null) {
-      throw ColumnNotFoundException("Can not find column $colName");
+      throw ColumnNotFoundException('Can not find column $colName');
     }
     return ind;
   }

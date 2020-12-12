@@ -11,7 +11,7 @@ A dataframe for Dart
 From csv:
 
    ```dart
-   final df = await DataFrame.fromCsv("dataset/stocks.csv");
+   final df = await DataFrame.fromCsv('dataset/stocks.csv');
    ```
 fromCSV parses files according to the csv standard, including support for escape double quotes (see: [RFC4180](https://tools.ietf.org/html/rfc4180)).
 
@@ -29,8 +29,8 @@ From records:
 
    ```dart
    final rows = <Map<String, dynamic>> rows[
-      <String, dynamic>{"col1": 21, "col2": "foo", "col3": DateTime.now()},
-      <String, dynamic>{"col1": 22, "col2": "bar", "col3": DateTime.now()},
+      <String, dynamic>{'col1': 21, 'col2': 'foo', 'col3': DateTime.now()},
+      <String, dynamic>{'col1': 22, 'col2': 'bar', 'col3': DateTime.now()},
    ];
    final df = DataFrame.fromRows(rows);
    ```
@@ -42,7 +42,7 @@ From records:
    // select a subset of rows
    final List<Map<String, dynamic>> rows = df.subset(0,100);
    /// select records for a column
-   final List<double> values = df.colRecords<double>("col2");
+   final List<double> values = df.colRecords<double>('col2');
    /// select list of records
    final List<List<dynamic>> records = df.records;
    ```
@@ -53,7 +53,7 @@ Add data:
 
    ```dart
    // add a row
-   df.addRow(<String,dynamic>{"col1": 1, "col2": 2.0});
+   df.addRow(<String,dynamic>{'col1': 1, 'col2': 2.0});
    // add a line of records
    df.addRecord(<dynamic>[1, 2.0]);
    ```
@@ -83,17 +83,17 @@ Copy a dataframe:
 Nulls and zeros:
 
    ```dart
-   final int n = df.countNulls_("col1");
-   final int n = df.countZeros_("col1");
+   final int n = df.countNulls_('col1');
+   final int n = df.countZeros_('col1');
    ```
 
 Columns:
 
    ```dart
-   final int mean = df.mean("col1");
-   final int sum = df.sum("col1");
-   final int max = df.max("col1");
-   final int min = df.min("col1");
+   final int mean = df.mean('col1');
+   final int sum = df.sum('col1');
+   final int max = df.max('col1');
+   final int min = df.min('col1');
    ```
 
 ### Info
