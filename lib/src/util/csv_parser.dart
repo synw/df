@@ -1,76 +1,84 @@
+import 'package:characters/characters.dart';
+
 /// CSVParser parses a stream of lines into a list of vals compliant with
-/// the CSV standard
+/// the CSV standard.
 ///
-/// See RFC4180 for details on CSV standard
+/// See RFC4180 for details on CSV standard.
 class CsvParser {
   /// Takes a single line and parses it into a list of values according to the
-  /// csv standard (see RFC4180)
+  /// csv standard (see RFC4180).
   static List<String> parseLine(String line) {
     final records = <String>[];
-    var i = 0;
     StringBuffer record;
-    while (i < line.length) {
+    final charIter = line.characters.iterator;
+    while (charIter.moveNext()) {
       record = StringBuffer();
-      if (line[i] == '"') {
-        // if the csv field begins with a double quote, parse it with
-        // proper character escaping - see RC4180 2.5-2.7
-        i = parseEscapedField(line, record, i);
+      if (charIter.current == '"') {
+        // If the csv field begins with a double quote, parse it with
+        // proper character escaping - see RC4180 2.5-2.7.
+        parseEscapedField(record, charIter);
       } else {
-        i = parseField(line, record, i);
+        parseField(record, charIter);
       }
       records.add(record.toString());
-      // increment past the current char (a comma or EOL)
-      i++;
     }
-    // special case for a line that ends with comma (ie a blank field)
+    // special case for a line that ends with comma (ie a blank field).
     if (line[line.length - 1] == ',') records.add('');
     return records;
   }
 
   /// Parse and write chars to buff until a comma is reached, then return the
-  /// the index after the last char consumed
-  static int parseField(String line, StringBuffer record, int startIndex) {
-    var i = startIndex;
-    while (i < line.length && line[i] != ',') {
-      if (line[i] == '"') {
+  /// the index after the last char consumed.
+  static void parseField(StringBuffer record, CharacterRange charIter) {
+    // parseField expects to be called on an iterator for which 'moveNext' has
+    // already been called.
+    CsvParser._assertMoveNextHasBeenCalled(charIter);
+    // Need to include the current character in the field.
+    record.write(charIter.current);
+    while (charIter.moveNext() && charIter.current != ',') {
+      if (charIter.current == '"') {
         throw FormatException('A field contained an unescaped double quote. '
             'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-            'character $i of line:\n$line\n');
+            'Character ${charIter.stringBefore.length} of line:\n${charIter.source}\n');
       }
-      record.write(line[i]);
-      i++;
+      record.write(charIter.current);
     }
-    return i;
   }
 
-  /// Like _parseField, but with support for character escaping
-  static int parseEscapedField(
-      String line, StringBuffer record, int startIndex) {
-    var i = startIndex;
+  /// Like _parseField, but with support for character escaping.
+  static void parseEscapedField(StringBuffer record, CharacterRange charIter) {
+    // parseEscapedField expects to be called on an iterator for which 'moveNext'
+    // has already been called.
+    CsvParser._assertMoveNextHasBeenCalled(charIter);
     assert(
-        line[i] == '"',
+        charIter.current == '"',
         'parseEscapedField was called on an unescaped field at'
-        ' char $i of line $line');
-    // increment past the first char (a double quote)
-    i++;
-    while (i < line.length) {
-      if (line[i] == '"') {
-        if (i + 1 < line.length && line[i + 1] == '"') {
-          // A double quote preceded by a double quote is escaped - increment
-          // past this double quote and write the next one to record
-          i++;
-        } else {
-          // Single double quote, this is the end of the escaped sequence
-          return i + 1;
+        ' char ${charIter.stringBefore.length} of line ${charIter.source}');
+    while (charIter.moveNext()) {
+      if (charIter.current == '"') {
+        // Step past the current double quote.
+        charIter.moveNext();
+        // ignore: invariant_booleans
+        if (charIter.current != '"') {
+          // Single double quote, this is the end of the escaped sequence.
+          return;
         }
       }
-      record.write(line[i]);
-      i++;
+      // The current character is either a regular character or an escaped double quote-
+      // write it to record.
+      record.write(charIter.current);
     }
-    // reached end of line without closing the escape quote
+    // Reached end of line without closing the escape quote.
     throw FormatException(
         'A field contained an escape quote without a closing escape quote. '
         'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-        'character $i of line:\n$line\n');
+        'character ${charIter.stringBefore.length} of line:\n${charIter.source}\n');
+  }
+
+  static void _assertMoveNextHasBeenCalled(CharacterRange charIter) {
+    // CharacterRange returns an empty String if moveNext hasn't been called yet.
+    // This assert will also pass if the character range is empty.
+    assert(charIter.current != '',
+        'You must call \'moveNext\' before calling \'parseField\'.');
   }
 }
