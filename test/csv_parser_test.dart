@@ -1,106 +1,158 @@
-import 'dart:math';
+import 'dart:async';
 
-import 'package:characters/characters.dart';
 import 'package:df/src/util/csv_parser.dart';
 import 'package:test/test.dart';
 
+StreamIterator<String> _iterFromLine(String line) =>
+    StreamIterator(Stream.fromIterable(line.split('')));
+
+Future<String> _remaining(StreamIterator<String> charIter) async {
+  final buff = StringBuffer(charIter.current);
+  while (await charIter.moveNext()) {
+    buff.write(charIter.current);
+  }
+  return buff.toString();
+}
+
 void main() {
-  test('test parseField', () {
-    CharacterRange iter;
+  test('test parseField', () async {
+    StreamIterator<String> iter;
     StringBuffer record;
 
     // Parse first field.
-    iter = 'a,bc,def'.characters.iterator..moveNext();
+    iter = _iterFromLine('a,bc,def\n');
+    await iter.moveNext();
     record = StringBuffer();
-    CsvParser.parseField(record, iter);
-    expect(iter.current + iter.stringAfter, ',bc,def');
+    await CsvParser(iter).parseField(record);
+    expect(await _remaining(iter), ',bc,def\n');
     expect(record.toString(), 'a');
 
     // Parse second field with two chars.
-    iter = 'bc,def'.characters.iterator..moveNext();
+    iter = _iterFromLine('bc,def\n');
+    await iter.moveNext();
     record = StringBuffer();
-    CsvParser.parseField(record, iter);
-    expect(iter.current + iter.stringAfter, ',def');
+    await CsvParser(iter).parseField(record);
+    expect(await _remaining(iter), ',def\n');
     expect(record.toString(), 'bc');
 
     // Parse final field.
-    iter = 'def'.characters.iterator..moveNext();
+    iter = _iterFromLine('def\n');
+    await iter.moveNext();
     record = StringBuffer();
-    CsvParser.parseField(record, iter);
-    expect(iter.isEmpty, true);
+    await CsvParser(iter).parseField(record);
+    expect(await _remaining(iter), '\n');
     expect(record.toString(), 'def');
 
-    // A double quote in an unescaped field throws an error.
-    iter = 'b"'.characters.iterator..moveNext();
+    // Parse empty field.
+    iter = _iterFromLine(',,\n');
+    await iter.moveNext();
     record = StringBuffer();
-    expect(() => CsvParser.parseField(record, iter),
-        throwsA(isA<FormatException>()));
+    await CsvParser(iter).parseField(record);
+    expect(await _remaining(iter), ',,\n');
+    expect(record.toString(), '');
+
+    // Parse empty final field.
+    iter = _iterFromLine('\n');
+    await iter.moveNext();
+    record = StringBuffer();
+    await CsvParser(iter).parseField(record);
+    expect(await _remaining(iter), '\n');
+    expect(record.toString(), '');
+
+    // A double quote in an unescaped field throws an error.
+    iter = _iterFromLine('b"\n');
+    await iter.moveNext();
+    record = StringBuffer();
+    expect(CsvParser(iter).parseField(record), throwsA(isA<FormatException>()));
   });
 
-  test('test parseEscapedField', () {
-    CharacterRange iter;
+  test('test parseEscapedField', () async {
+    StreamIterator<String> iter;
     StringBuffer record;
 
     // Escape quotes aren't added to record.
-    iter = '"a","b,c"'.characters.iterator..moveNext();
+    iter = _iterFromLine('"a","b,c"\n');
+    await iter.moveNext();
     record = StringBuffer();
-    CsvParser.parseEscapedField(record, iter);
-    expect(iter.current + iter.stringAfter, ',"b,c"');
+    await CsvParser(iter).parseEscapedField(record);
+    expect(await _remaining(iter), ',"b,c"\n');
     expect(record.toString(), 'a');
 
-    // Parse an escaped field with a comma.
-    iter = '"b,c"'.characters.iterator..moveNext();
+    // Parse empty escaped field.
+    iter = _iterFromLine('"",b,c\n');
+    await iter.moveNext();
     record = StringBuffer();
-    CsvParser.parseEscapedField(record, iter);
-    expect(iter.isEmpty, true);
+    await CsvParser(iter).parseEscapedField(record);
+    expect(await _remaining(iter), ',b,c\n');
+    expect(record.toString(), '');
+
+    // Parse an escaped field with a comma.
+    iter = _iterFromLine('"b,c"\n');
+    await iter.moveNext();
+    record = StringBuffer();
+    await CsvParser(iter).parseEscapedField(record);
+    expect(await iter.moveNext(), false);
     expect(record.toString(), 'b,c');
 
     // A properly escaped double quote is added to record.
-    iter = '"b""",c'.characters.iterator..moveNext();
+    iter = _iterFromLine('"b""",c\n');
+    await iter.moveNext();
     record = StringBuffer();
-    CsvParser.parseEscapedField(record, iter);
-    expect(iter.current + iter.stringAfter, ',c');
+    await CsvParser(iter).parseEscapedField(record);
+    expect(await _remaining(iter), ',c\n');
     expect(record.toString(), 'b"');
 
-    // A FormatException is thrown if there's a hanging escape quote.
-    iter = '"b,c'.characters.iterator..moveNext();
+    // A properly escaped newline is added to record.
+    iter = _iterFromLine('"b\n",c\n');
+    await iter.moveNext();
     record = StringBuffer();
-    expect(() => CsvParser.parseEscapedField(record, iter),
+    await CsvParser(iter).parseEscapedField(record);
+    expect(await _remaining(iter), ',c\n');
+    expect(record.toString(), 'b\n');
+
+    // A FormatException is thrown if there's a hanging escape quote.
+    iter = _iterFromLine('"b,c\n');
+    await iter.moveNext();
+    record = StringBuffer();
+    expect(() => CsvParser(iter).parseEscapedField(record),
         throwsA(isA<FormatException>()));
   });
 
-  test('test parseLine', () {
-    StringBuffer record;
-    String line;
+  test('test parseLine', () async {
+    StreamIterator<String> iter;
 
     // Parse a generic line with no escaping.
-    line = 'a,bc,def';
-    record = StringBuffer();
-    expect(CsvParser.parseLine(line), <dynamic>['a', 'bc', 'def']);
+    iter = _iterFromLine('a,bc,def\nx,y,z\n');
+    expect(await CsvParser(iter).parseLine(), <dynamic>['a', 'bc', 'def']);
+    expect(await _remaining(iter), '\nx,y,z\n');
 
     // Parse a generic line with a blank final field.
-    line = 'a,b,';
-    record = StringBuffer();
-    expect(CsvParser.parseLine(line), <dynamic>['a', 'b', '']);
+    iter = _iterFromLine('a,b,\nx,y,z\n');
+    expect(await CsvParser(iter).parseLine(), <dynamic>['a', 'b', '']);
+    expect(await _remaining(iter), '\nx,y,z\n');
+
+    // Parse a generic line with a blank internal field.
+    iter = _iterFromLine('a,,c\nx,y,z\n');
+    expect(await CsvParser(iter).parseLine(), <dynamic>['a', '', 'c']);
+    expect(await _remaining(iter), '\nx,y,z\n');
 
     // Parse a line with basic escaping.
-    line = 'a,"bc","def"';
-    record = StringBuffer();
-    expect(CsvParser.parseLine(line), <dynamic>['a', 'bc', 'def']);
+    iter = _iterFromLine('a,"bc","def"\nx,y,z\n');
+    expect(await CsvParser(iter).parseLine(), <dynamic>['a', 'bc', 'def']);
+    expect(await _remaining(iter), '\nx,y,z\n');
 
     // Parse a line with escaped commas.
-    line = 'a,"b,c","d,e,f"';
-    record = StringBuffer();
-    expect(CsvParser.parseLine(line), <dynamic>['a', 'b,c', 'd,e,f']);
+    iter = _iterFromLine('a,"b,c","d,e,f"\nx,y,z\n');
+    expect(await CsvParser(iter).parseLine(), <dynamic>['a', 'b,c', 'd,e,f']);
+    expect(await _remaining(iter), '\nx,y,z\n');
 
     // Parse a line with escaped double quotes and commas.
-    line = 'a,"b""c","d,e,f"""';
-    record = StringBuffer();
-    expect(CsvParser.parseLine(line), <dynamic>['a', 'b"c', 'd,e,f"']);
+    iter = _iterFromLine('a,"b""c","d,e,f"""\nx,y,z\n');
+    expect(await CsvParser(iter).parseLine(), <dynamic>['a', 'b"c', 'd,e,f"']);
+    expect(await _remaining(iter), '\nx,y,z\n');
 
     // Parse a line with an unclosed escape quote.
-    line = 'a,"b"",c';
-    record = StringBuffer();
-    expect(() => CsvParser.parseLine(line), throwsA(isA<FormatException>()));
+    iter = _iterFromLine('a,"b"",c\nx,y,z\n');
+    expect(CsvParser(iter).parseLine(), throwsA(isA<FormatException>()));
   });
 }

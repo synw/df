@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:df/src/util/csv_parser.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:meta/meta.dart';
 
@@ -12,6 +11,7 @@ import 'exceptions.dart';
 import 'info.dart';
 import 'matrix.dart';
 import 'type.dart';
+import 'util/csv_parser.dart';
 
 /// The main dataframe class
 class DataFrame {
@@ -21,6 +21,7 @@ class DataFrame {
   List<DataFrameColumn> _columns = <DataFrameColumn>[];
   final DataMatrix _matrix = DataMatrix();
   final _info = DataFrameInfo();
+
   //Map<int, String> _columnsIndices;
 
   // ***********************
@@ -34,6 +35,7 @@ class DataFrame {
 
   /// All the data
   List<List<dynamic>> get dataset => _matrix.data;
+
   set dataset(List<List<dynamic>> dataPoints) => _matrix.data = dataPoints;
 
   // ********* info **********
@@ -114,8 +116,11 @@ class DataFrame {
     return colValues;
   }
 
-  /// Build a dataframe from a utf8 encoded stream of comma separated strings
-  static Future<DataFrame> fromStream(Stream<String> stream,
+  /// Build a dataframe from a utf8 encoded stream of comma separated characters.
+  ///
+  /// Note that each element in Stream is a single string element, *NOT* a full
+  /// line in the source csv.
+  static Future<DataFrame> fromCharStream(Stream<String> charStream,
       {String dateFormat,
       String timestampCol,
       TimestampFormat timestampFormat = TimestampFormat.milliseconds,
@@ -123,9 +128,12 @@ class DataFrame {
     final df = DataFrame();
     var i = 1;
     List<String> _colNames;
-    await stream.forEach((line) {
+    final parser = CsvParser(StreamIterator(charStream));
+    // ignore: literal_only_boolean_expressions
+    for (var vals = await parser.parseLine();
+        vals != null;
+        vals = await parser.parseLine()) {
       //print('line $i: $line');
-      final vals = CsvParser.parseLine(line);
       if (i == 1) {
         // set columns names
         _colNames = vals;
@@ -151,7 +159,7 @@ class DataFrame {
         df._matrix.data.add(colValues);
       }
       ++i;
-    });
+    }
     if (verbose) {
       print('Parsed ${df._matrix.data.length} rows');
     }
@@ -169,11 +177,15 @@ class DataFrame {
       throw FileNotFoundException('File not found: $path');
     }
 
-    return fromStream(
+    return fromCharStream(
       file
           .openRead()
           .transform<String>(utf8.decoder)
-          .transform<String>(const LineSplitter()),
+          // Split by newline and then add the newlines back in as a hacky way
+          // to remove platform specific line breaks.
+          .transform<String>(const LineSplitter())
+          .map((line) => (line + '\n').split(''))
+          .expand((lst) => lst),
       dateFormat: dateFormat,
       timestampCol: timestampCol,
       timestampFormat: timestampFormat,
