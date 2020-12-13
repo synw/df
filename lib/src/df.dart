@@ -182,7 +182,9 @@ class DataFrame {
           .openRead()
           .transform<String>(utf8.decoder)
           // Split by newline and then add the newlines back in as a hacky way
-          // to remove platform specific line breaks.
+          // to remove platform specific line breaks and to add a newline to the
+          // final line if it didn't already have one (this is optional according
+          // to the csv standard but required by the csv parser).
           .transform<String>(const LineSplitter())
           .map((line) => (line + '\n').split(''))
           .expand((lst) => lst),
