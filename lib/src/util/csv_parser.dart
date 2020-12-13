@@ -10,10 +10,11 @@ class CsvParser {
   // Used for providing context in error messages.
   StringBuffer _lineSoFar = StringBuffer();
 
-  /// A CsvParser that parses the characters from the given stream iterator into
-  /// CSV rows.
+  /// Parses the characters from the given stream iterator as a csv (see RFC4180)
+  /// and returns a list of rows where each row is a list of values.
   ///
-  /// The strings supplied by [singleCharacterIterator] *must* be single element strings.
+  /// The strings supplied by [singleCharacterIterator] *must* be single element
+  /// strings and the last character in the stream must be the newline character.
   CsvParser(StreamIterator<String> singleCharacterIterator)
       : _charIter = singleCharacterIterator;
 
@@ -29,7 +30,9 @@ class CsvParser {
   }
 
   /// Takes a single line and parses it into a list of values according to the
-  /// csv standard (see RFC4180).
+  /// csv standard.
+  ///
+  /// If the iterator has run out of valid csv lines [parseLine] will return null.
   Future<List<String>> parseLine() async {
     final records = <String>[];
     _lineSoFar = StringBuffer();
@@ -43,29 +46,28 @@ class CsvParser {
         await parseField(record);
       }
       records.add(record.toString());
-      assert(_isDelimiter(_charIter.current),
-          "A parsed field did not end in a delimiter.");
+      // Non empty lines should return before the while loop is complete.
+      assert(
+          _isDelimiter(_charIter.current),
+          'A parsed field did not end in a delimiter. This should not happen '
+          'and indicates a bug in df.dart.\n'
+          'Please file a bug at:'
+          'https://github.com/synw/df/issues\n'
+          '$_getCurrentCharacterMessage\n');
       if (_charIter.current == '\n') {
         // Reached the end of the current csv line.
         return records;
       }
     }
-    // Special case for calling `parseLine()` on the final newline.
-    if (records.isEmpty) return null;
-    // Function should return before the while loop completes.
-    throw FormatException(
-        'Reached end of file before finding a newline. This should not happen '
-        'and indicates a bug in df.dart.\n'
-        'Please file a bug at:'
-        'https://github.com/synw/df/issues\n'
-        '$_getCurrentCharacterMessage\n');
+    // This was the final newline at the end of file, return null.
+    return null;
   }
 
-  /// Parse and write chars to buff until a comma is reached, then return the
-  /// the index after the last char consumed.
+  /// Parse and write chars to buff until a comma is reached.
+  ///
+  /// [ParseField] expects to be called on an iterator for which 'moveNext' has
+  /// already been called.
   Future<void> parseField(StringBuffer record) async {
-    // ParseField expects to be called on an iterator for which 'moveNext' has
-    // already been called.
     _assertMoveNextHasBeenCalled();
     // Special case for the empty field.
     if (_isDelimiter(_charIter.current)) return;
@@ -78,12 +80,12 @@ class CsvParser {
       if (_charIter.current == '"') {
         throw FormatException('A field contained an unescaped double quote at: '
             'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-            'Character \'${_charIter.current}\' of line:\n${_lineSoFar}...\n');
+            '$_getCurrentCharacterMessage\n');
       }
       record.write(_charIter.current);
     }
     // Function should return before the while loop completes.
-    throw FormatException(
+    throw AssertionError(
         'A field was not terminated in either a comma or newline. This should '
         'not happen and indicates a bug in df.dart.\n'
         'Please file a bug at:'
@@ -91,7 +93,10 @@ class CsvParser {
         '$_getCurrentCharacterMessage\n');
   }
 
-  /// Like _parseField, but with support for character escaping.
+  /// Like [parseField], but with support for character escaping.
+  ///
+  /// ParseField expects to be called on an iterator for which 'moveNext' has
+  /// already been called.
   Future<void> parseEscapedField(StringBuffer record) async {
     // parseEscapedField expects to be called on an iterator for which 'moveNext'
     // has already been called.

@@ -265,6 +265,16 @@ void main() {
     ]);
   });
 
+  test('from stream errors', () async {
+    var inputStream = Stream<String>.fromIterable('a,b\n1,2'.split(''));
+    expect(
+        DataFrame.fromCharStream(inputStream), throwsA(isA<AssertionError>()));
+
+    inputStream = Stream<String>.fromIterable(['a', ',', 'bb', '\n']);
+    expect(
+        DataFrame.fromCharStream(inputStream), throwsA(isA<AssertionError>()));
+  });
+
   test('escape quotes are consumed', () async {
     // Escape quotes should be consumed during parsing
     final inputStream = Stream<String>.fromIterable('a,"b"\n1,"2"\n'.split(''));

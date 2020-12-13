@@ -58,12 +58,23 @@ void main() {
     await CsvParser(iter).parseField(record);
     expect(await _remaining(iter), '\n');
     expect(record.toString(), '');
+  });
+
+  test('test parseField errors', () async {
+    StreamIterator<String> iter;
+    StringBuffer record;
 
     // A double quote in an unescaped field throws an error.
     iter = _iterFromLine('b"\n');
     await iter.moveNext();
     record = StringBuffer();
     expect(CsvParser(iter).parseField(record), throwsA(isA<FormatException>()));
+
+    // A field with no closing character (',' or '\n') throws an AssertionError.
+    iter = _iterFromLine('b');
+    await iter.moveNext();
+    record = StringBuffer();
+    expect(CsvParser(iter).parseField(record), throwsA(isA<AssertionError>()));
   });
 
   test('test parseEscapedField', () async {
@@ -118,6 +129,18 @@ void main() {
         throwsA(isA<FormatException>()));
   });
 
+  test('test parseEscapedField errors', () async {
+    StreamIterator<String> iter;
+    StringBuffer record;
+
+    // A FormatException is thrown if there's a hanging escape quote.
+    iter = _iterFromLine('"b,c\n');
+    await iter.moveNext();
+    record = StringBuffer();
+    expect(() => CsvParser(iter).parseEscapedField(record),
+        throwsA(isA<FormatException>()));
+  });
+
   test('test parseLine', () async {
     StreamIterator<String> iter;
 
@@ -150,9 +173,21 @@ void main() {
     iter = _iterFromLine('a,"b""c","d,e,f"""\nx,y,z\n');
     expect(await CsvParser(iter).parseLine(), <dynamic>['a', 'b"c', 'd,e,f"']);
     expect(await _remaining(iter), '\nx,y,z\n');
+  });
+
+  test('test parseLine errors', () async {
+    StreamIterator<String> iter;
 
     // Parse a line with an unclosed escape quote.
-    iter = _iterFromLine('a,"b"",c\nx,y,z\n');
+    iter = _iterFromLine('a,"b"",c\n');
     expect(CsvParser(iter).parseLine(), throwsA(isA<FormatException>()));
+
+    // Parse a line containing a field without a closing newline.
+    iter = _iterFromLine('a,b');
+    expect(CsvParser(iter).parseLine(), throwsA(isA<AssertionError>()));
+
+    // Parse a line containing an escaped field without a closing newline.
+    iter = _iterFromLine('a,"b"');
+    expect(CsvParser(iter).parseLine(), throwsA(isA<AssertionError>()));
   });
 }
