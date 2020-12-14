@@ -13,6 +13,7 @@ From csv:
    ```dart
    final df = await DataFrame.fromCsv('dataset/stocks.csv');
    ```
+fromCSV parses files according to the csv standard, including support for escape double quotes (see: [RFC4180](https://tools.ietf.org/html/rfc4180)).
 
 Note: the type of the records are infered from the data. The first line of the csv must contains the headers for the column names. Optional parameters:
 
