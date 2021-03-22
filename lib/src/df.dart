@@ -56,11 +56,10 @@ class DataFrame {
 
   /// Build a dataframe from a list of rows
   DataFrame.fromRows(List<Map<String, dynamic>> rows)
-      : assert(rows != null),
-        assert(rows.isNotEmpty) {
+      : assert(rows.isNotEmpty) {
     // create _columns from the first datapint
     rows[0].forEach((k, dynamic v) {
-      final t = v.runtimeType as Type;
+      final t = v.runtimeType;
       _columns.add(DataFrameColumn(name: k, type: t));
     });
     // fill the data
@@ -69,9 +68,9 @@ class DataFrame {
 
   static List<dynamic> _parseLine(
       List<dynamic> vals, List<DataFrameColumn> columnsNames,
-      {String dateFormat,
-      String timestampCol,
-      TimestampFormat timestampFormat}) {
+      {String? dateFormat,
+      String? timestampCol,
+      TimestampFormat? timestampFormat}) {
     var vi = 0;
     final colValues = <dynamic>[];
     vals.forEach((dynamic v) {
@@ -88,7 +87,7 @@ class DataFrame {
             colValues.add(Jiffy(v.toString(), dateFormat).dateTime);
           } else {
             if (timestampCol == columnsNames[vi].name) {
-              DateTime d;
+              DateTime? d;
               if (timestampFormat == TimestampFormat.seconds) {
                 d = DateTime.fromMillisecondsSinceEpoch(
                     int.parse(v.toString()) * 1000);
@@ -115,8 +114,8 @@ class DataFrame {
 
   /// Build a dataframe from a csv file
   static Future<DataFrame> fromCsv(String path,
-      {String dateFormat,
-      String timestampCol,
+      {String? dateFormat,
+      String? timestampCol,
       TimestampFormat timestampFormat = TimestampFormat.milliseconds,
       bool verbose = false}) async {
     final file = File(path);
@@ -125,7 +124,7 @@ class DataFrame {
     }
     final df = DataFrame();
     var i = 1;
-    List<String> _colNames;
+    late List<String> _colNames;
     await file
         .openRead()
         .transform<String>(utf8.decoder)
@@ -181,7 +180,7 @@ class DataFrame {
     final data =
         _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices());
     _matrix.data = _matrix.data.sublist(startIndex, endIndex);
-    return data;
+    return data as List<Map<String, dynamic>>;
   }
 
   /// Get a new dataframe with a subset of data
@@ -191,8 +190,8 @@ class DataFrame {
   }
 
   /// Get typed records for a column
-  List<T> colRecords<T>(String colName, {int limit}) => _matrix
-      .typedRecordsForColumnIndice<T>(_indiceForColumn(colName), limit: limit);
+  List<T?> colRecords<T>(String colName, {int? limit}) => _matrix
+      .typedRecordsForColumnIndex<T>(_indexForColumn(colName), limit: limit);
 
   // ********* filter operations **********
 
@@ -237,7 +236,7 @@ class DataFrame {
         'NULL',
         'N/A'
       ]}) {
-    final n = _matrix.countForValues(_indiceForColumn(colName), nullValues);
+    final n = _matrix.countForValues(_indexForColumn(colName), nullValues);
     return n;
   }
 
@@ -247,7 +246,7 @@ class DataFrame {
   /// considered as zero with [zeroValues]
   int countZeros_(String colName,
       {List<dynamic> zeroValues = const <dynamic>[0]}) {
-    final n = _matrix.countForValues(_indiceForColumn(colName), zeroValues);
+    final n = _matrix.countForValues(_indexForColumn(colName), zeroValues);
     return n;
   }
 
@@ -285,17 +284,16 @@ class DataFrame {
   // ********* calculations **********
 
   /// Sum of a column
-  double sum_(String colName) => _matrix.sumCol<num>(_indiceForColumn(colName));
+  double sum_(String colName) => _matrix.sumCol<num>(_indexForColumn(colName));
 
   /// Mean of a column
-  double mean_(String colName) =>
-      _matrix.meanCol<num>(_indiceForColumn(colName));
+  double mean_(String colName) => _matrix.meanCol(_indexForColumn(colName));
 
   /// Get the max value of a column
-  double max_(String colName) => _matrix.maxCol<num>(_indiceForColumn(colName));
+  double max_(String colName) => _matrix.maxCol(_indexForColumn(colName));
 
   /// Get the min value of a column
-  double min_(String colName) => _matrix.minCol<num>(_indiceForColumn(colName));
+  double min_(String colName) => _matrix.minCol(_indexForColumn(colName));
 
   // ********* info **********
 
@@ -325,8 +323,8 @@ class DataFrame {
   /// Print columns info
   void cols() => _info.colsInfo(columns: _columns);
 
-  /// Get the indice of a column
-  int columnIndice(String colName) => _indiceForColumn(colName);
+  /// Get the index of a column
+  int columnIndex(String colName) => _indexForColumn(colName);
 
   // ***********************
   // Internal methods
@@ -341,16 +339,15 @@ class DataFrame {
   }
 
   /// Get a new dataframe ssorted by a column
-  DataFrame sort_(String colName) =>
-      _sort(colName, inPlace: false) as DataFrame;
+  DataFrame? sort_(String colName) =>
+      _sort(colName, inPlace: false) as DataFrame?;
 
   /// Sort this dataframe by a column
   void sort(String colName) => _sort(colName, inPlace: true);
 
-  dynamic _sort(String colName, {@required bool inPlace}) {
-    assert(colName != null);
+  dynamic _sort(String colName, {required bool inPlace}) {
     final colData =
-        _matrix.typedRecordsForColumnIndice<dynamic>(_indiceForColumn(colName));
+        _matrix.typedRecordsForColumnIndex<dynamic>(_indexForColumn(colName));
     // create a map of index/data
     final dataIndex = <int, dynamic>{};
     var i = 0;
@@ -362,13 +359,13 @@ class DataFrame {
     final sortedKeys = dataIndex.keys.toList(growable: false)
       ..sort((k1, k2) => (dataIndex[k1] as dynamic)
           .compareTo(dataIndex[k2] as dynamic) as int);
-    final sortedMap = LinkedHashMap<int, dynamic>.fromIterable(sortedKeys,
-        key: (dynamic k) => k as int, value: (dynamic k) => dataIndex[k]);
+    final sortedMap = LinkedHashMap<int?, dynamic>.fromIterable(sortedKeys,
+        key: (dynamic k) => k as int?, value: (dynamic k) => dataIndex[k]);
     final order = sortedMap.keys;
     // rebuild the dataset in order
     final _newMatrix = <List<dynamic>>[];
     for (final i in order) {
-      _newMatrix.add(_matrix.data[i]);
+      _newMatrix.add(_matrix.data[i!]);
     }
     if (!inPlace) {
       return DataFrame._copyWithMatrix(this, _newMatrix);
@@ -378,8 +375,8 @@ class DataFrame {
     return null;
   }
 
-  int _indiceForColumn(String colName) {
-    int ind;
+  int _indexForColumn(String colName) {
+    int? ind;
     var i = 0;
     for (final col in _columns) {
       if (colName == col.name) {

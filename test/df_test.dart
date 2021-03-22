@@ -1,24 +1,26 @@
 import 'package:test/test.dart';
 import 'package:df/df.dart';
 
-DataFrame baseDf;
+DataFrame baseDf = DataFrame();
 
 void main() {
-  DataFrame df;
+  var df = DataFrame();
 
   test('from rows', () async {
     final date = DateTime.now();
     final rows = <Map<String, dynamic>>[
       <String, dynamic>{'col1': 'a', 'col2': 1, 'col3': 1.0, 'col4': date},
       <String, dynamic>{'col1': 'b', 'col2': 2, 'col3': 2.0, 'col4': date},
+      <String, dynamic>{'col1': 'c', 'col2': 3, 'col3': null},
     ];
     df = DataFrame.fromRows(rows);
-    expect(df.length, 2);
+    expect(df.length, 3);
     expect(df.columnsNames, <String>['col1', 'col2', 'col3', 'col4']);
-    expect(df.rows, rows);
+    expect(df.rows.toList(), rows);
     expect(df.dataset, <dynamic>[
       <dynamic>['a', 1, 1.0, date],
-      <dynamic>['b', 2, 2.0, date]
+      <dynamic>['b', 2, 2.0, date],
+      <dynamic>['c', 3, null, null],
     ]);
     expect(df.colRecords<String>('col1'), <String>['a', 'b']);
     expect(df.colRecords<String>('col1', limit: 1), <String>['a']);
@@ -30,11 +32,6 @@ void main() {
     ];
     expect(df.columns, cols);
     // errors
-    try {
-      df = DataFrame.fromRows(null);
-    } catch (e) {
-      expect(e is AssertionError, true);
-    }
     try {
       df = DataFrame.fromRows(<Map<String, dynamic>>[]);
     } catch (e) {
@@ -81,10 +78,12 @@ void main() {
     final df2 = df.copy_();
     expect(df2.length, df.length);
 
-    df = await DataFrame.fromCsv('/wrong/path').catchError((dynamic e) {
-      expect(e.runtimeType.toString() == 'FileNotFoundException', true);
-      expect(e.message, 'File not found: /wrong/path');
-    });
+    try {
+      df = await DataFrame.fromCsv('/wrong/path');
+      fail('Expected a `FileNotFound` exception.');
+    } catch (e) {
+      expect(e, isA<FileNotFoundException>());
+    }
   });
 
   test('subset', () async {
@@ -148,10 +147,10 @@ void main() {
       <String, dynamic>{'col1': 1, 'col2': 1},
     ];
     df = DataFrame.fromRows(rows)..head();
-    expect(df.max_('col2'), 2);
-    expect(df.min_('col2'), 1);
-    expect(df.mean_('col1'), 1);
-    expect(df.sum_('col1'), 2);
+    expect(df.max_('col2'), 2.0);
+    expect(df.min_('col2'), 1.0);
+    expect(df.mean_('col1'), 1.0);
+    expect(df.sum_('col1'), 2.0);
   });
 
   test('error', () async {
@@ -171,16 +170,6 @@ void main() {
       expect(e.toString(),
           'type \'int\' is not a subtype of type \'double\' in type cast');
     }
-    try {
-      DataFrameColumn.inferFromRecord('1', null);
-    } catch (e) {
-      expect(e is AssertionError, true);
-    }
-    try {
-      DataFrameColumn.inferFromRecord(null, 'n');
-    } catch (e) {
-      expect(e is AssertionError, true);
-    }
   });
 
   test('sort', () async {
@@ -194,17 +183,12 @@ void main() {
       ..head()
       ..sort('col2');
     expect(df.colRecords<int>('col1'), <int>[4, 3, 2, 1]);
-    final df2 = df.sort_('col1');
+    final df2 = df.sort_('col1')!;
     expect(df2.colRecords<int>('col1'), <int>[1, 2, 3, 4]);
     try {
       df.sort_('wrong_col');
     } catch (e) {
       expect(e is ColumnNotFoundException, true);
-    }
-    try {
-      df.sort_(null);
-    } catch (e) {
-      expect(e is AssertionError, true);
     }
   });
 
@@ -217,7 +201,7 @@ void main() {
     final h = df.columns[0].hashCode;
     expect(h, 'col1'.hashCode);
     expect(df.columnsIndices, <int, String>{0: 'col1', 1: 'col2'});
-    expect(df.columnIndice('col1'), 0);
+    expect(df.columnIndex('col1'), 0);
   });
 
   test('type inference', () async {

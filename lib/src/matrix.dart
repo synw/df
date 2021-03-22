@@ -23,12 +23,13 @@ class DataMatrix {
   // ********* select operations **********
 
   /// Row for an index position
-  Map<String, dynamic> rowForIndex(int index, Map<int, String> indices) {
+  Map<String, dynamic> rowForIndex(
+      int index, Map<int, String> indicesToColumnNames) {
     final row = <String, dynamic>{};
     final dataRow = data[index];
     var i = 0;
     dataRow.forEach((dynamic item) {
-      row[indices[i]] = item;
+      row[indicesToColumnNames[i]!] = item;
       ++i;
     });
     return row;
@@ -42,7 +43,7 @@ class DataMatrix {
       final dataRow = <String, dynamic>{};
       var i = 0;
       row.forEach((dynamic item) {
-        dataRow[indices[i]] = item;
+        dataRow[indices[i]!] = item;
         ++i;
       });
       dataRows.add(dataRow);
@@ -51,13 +52,14 @@ class DataMatrix {
   }
 
   /// Get typed data from a column
-  List<T> typedRecordsForColumnIndice<T>(int columnIndice, {int limit}) {
-    final dataFound = <T>[];
+  List<T?> typedRecordsForColumnIndex<T>(int columnIndex, {int? limit}) {
+    final dataFound = <T?>[];
     var i = 0;
     for (final row in data) {
-      T val;
+      print(row.runtimeType);
+      T? val;
       try {
-        val = row[columnIndice] as T;
+        val = row[columnIndex] as T;
       } catch (e) {
         rethrow;
         //throw TypeConversionException(
@@ -77,10 +79,10 @@ class DataMatrix {
   // ********* count operations **********
 
   /// Count values in a column
-  int countForValues(int columnIndice, List<dynamic> values) {
+  int countForValues(int columnIndex, List<dynamic> values) {
     var n = 0;
     data.forEach((row) {
-      if (values.contains(row[columnIndice])) {
+      if (values.contains(row[columnIndex])) {
         ++n;
       }
     });
@@ -90,32 +92,32 @@ class DataMatrix {
   // ********* aggregations **********
 
   /// Sum a column
-  double sumCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
+  double sumCol<T>(int columnIndex) {
+    final rawData = typedRecordsForColumnIndex<T>(columnIndex);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
     final vector = Vector.fromList(data);
     return vector.sum();
   }
 
   /// Mean a column
-  double meanCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
+  double meanCol(int columnIndex) {
+    final rawData = typedRecordsForColumnIndex<double>(columnIndex);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
     final vector = Vector.fromList(data);
     return vector.mean();
   }
 
   /// Get the max value of a column
-  double maxCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
+  double maxCol(int columnIndex) {
+    final rawData = typedRecordsForColumnIndex<double>(columnIndex);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
     final vector = Vector.fromList(data);
     return vector.max();
   }
 
   /// Get the min value of a column
-  double minCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
+  double minCol(int columnIndex) {
+    final rawData = typedRecordsForColumnIndex<double>(columnIndex);
     final data = List<double>.from(rawData.map<double>(_numToDouble));
     final vector = Vector.fromList(data);
     return vector.min();

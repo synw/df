@@ -12,7 +12,7 @@ class DataFrameInfo {
   }
 
   /// Print columns info
-  void colsInfo({@required List<DataFrameColumn> columns}) {
+  void colsInfo({required List<DataFrameColumn> columns}) {
     for (final col in columns) {
       print("Column $col");
     }
