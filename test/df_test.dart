@@ -43,6 +43,14 @@ void main() {
   });
 
   test('csv', () async {
+    // With an newline and the end of the file (optional by csv standard).
+    df = await DataFrame.fromCsv('test/data/terminating_newline.csv',
+        verbose: true)
+      ..show();
+    expect(df.length, 1);
+    expect(df.columnsNames, <String>['a', 'b', 'c']);
+    expect(df.rows.first, {'a': 1, 'b': 2, 'c': 3});
+
     // date
     df = await DataFrame.fromCsv('test/data/data_date.csv',
         dateFormat: 'MMM dd yyyy', verbose: true)
@@ -228,6 +236,8 @@ void main() {
     r = DataFrameColumn.inferFromRecord(
         DateTime.now().toIso8601String(), 'record');
     expect(r.type, DateTime);
+    r = DataFrameColumn.inferFromRecord('\n0\n', 'record');
+    expect(r.type, String);
   });
 
   test('set', () async {
@@ -244,6 +254,68 @@ void main() {
     ];
     edf.dataset = dataset;
     expect(edf.dataset, dataset);
+  });
+
+  test('from stream', () async {
+    final inputStream = Stream<String>.fromIterable('a,b\n1,2\n'.split(''));
+    df = await DataFrame.fromCharStream(inputStream);
+    expect(df.columnsNames, ['a', 'b']);
+    expect(df.rows.toList(), [
+      {'a': 1, 'b': 2}
+    ]);
+  });
+
+  test('from stream errors', () async {
+    var inputStream = Stream<String>.fromIterable('a,b\n1,2'.split(''));
+    expect(
+        DataFrame.fromCharStream(inputStream), throwsA(isA<AssertionError>()));
+
+    inputStream = Stream<String>.fromIterable(['a', ',', 'bb', '\n']);
+    expect(
+        DataFrame.fromCharStream(inputStream), throwsA(isA<AssertionError>()));
+  });
+
+  test('escape quotes are consumed', () async {
+    // Escape quotes should be consumed during parsing
+    final inputStream = Stream<String>.fromIterable('a,"b"\n1,"2"\n'.split(''));
+    df = await DataFrame.fromCharStream(inputStream);
+    expect(df.columnsNames, ['a', 'b']);
+    expect(df.rows.toList(), [
+      {'a': 1, 'b': 2}
+    ]);
+  });
+
+  test('commas and double quotes are properly escaped', () async {
+    // Escape quotes should be consumed during parsing
+    var inputStream =
+        Stream<String>.fromIterable('a,"b,c"\n1,"2,3"\n'.split(''));
+    df = await DataFrame.fromCharStream(inputStream);
+    expect(df.columnsNames, ['a', 'b,c']);
+    expect(df.rows.toList(), [
+      {'a': 1, 'b,c': '2,3'}
+    ]);
+
+    // within an escaped sequence, double quotes can be included by replacing
+    // them with two double quotes - RFC4180-2.7
+    inputStream = Stream<String>.fromIterable(
+        'a,"b,c"\n"""They may say I\'m a dreamer, but I\'m not""","2,3"\n'
+            .split(''));
+    df = await DataFrame.fromCharStream(inputStream);
+    expect(df.columnsNames, ['a', 'b,c']);
+    expect(df.rows.toList(), [
+      {'a': '"They may say I\'m a dreamer, but I\'m not"', 'b,c': '2,3'}
+    ]);
+  });
+
+  test('newlines are properly escaped', () async {
+    // Escape quotes should be consumed during parsing
+    final inputStream =
+        Stream<String>.fromIterable('a,"b,\nc"\n1,"\n23\n"\n'.split(''));
+    df = await DataFrame.fromCharStream(inputStream);
+    expect(df.columnsNames, ['a', 'b,\nc']);
+    expect(df.rows.toList(), [
+      {'a': 1, 'b,\nc': '\n23\n'}
+    ]);
   });
 }
 

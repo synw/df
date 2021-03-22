@@ -12,14 +12,23 @@ class DataFrameColumn {
   /// The column's type
   Type type;
 
-  /// Infer the column types from a datapoint
+  /// Infer the column types from a datapoint.
+  ///
+  /// If a field contains whitespace and/or newlines it will not be treated as a
+  /// numeric type even if it could be successfully parsed as an int or double.
+  ///
+  /// eg '\n23' and ' 23' will evaluate as strings and retain their newline and
+  /// space respectively.
   DataFrameColumn.inferFromRecord(String record, this.name, {String dateFormat})
       : assert(name != null),
         assert(record != null) {
     type = String;
-    if (int.tryParse(record) != null) {
+    // tryParse will ignore whitespace, but values with white space should be
+    // treated as strings.
+    if (!record.contains(RegExp('[\s\n]')) && int.tryParse(record) != null) {
       type = int;
-    } else if (double.tryParse(record) != null) {
+    } else if (!record.contains(RegExp('[\s\n]')) &&
+        double.tryParse(record) != null) {
       type = double;
     } else {
       try {
