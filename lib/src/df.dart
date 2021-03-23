@@ -33,8 +33,22 @@ class DataFrame {
   /// An iterable of rows data
   Iterable<Map<String, dynamic>> get rows => _iterRows();
 
-  /// All the data
-  List<List<dynamic>> get dataset => _matrix.data;
+  Iterable<List<dynamic>> get _valueRows sync* {
+    var i = 0;
+    while (i < _matrix.data.length) {
+      var row = List<dynamic>.filled(_columns.length, null);
+      for (final mapEntry in _matrix.rowForIndex(i, _columnIndices()).entries) {
+        row[_indexForColumn(mapEntry.key)] = mapEntry.value;
+      }
+      yield row;
+      ++i;
+    }
+  }
+
+  /// An iterable of rows of values of data.
+  /// Distinct from `df.rows.toList()` in that unspecified columns are converted
+  /// to null values.
+  List<List<dynamic>> get dataset => _valueRows.toList();
 
   set dataset(List<List<dynamic>> dataPoints) => _matrix.data = dataPoints;
 
@@ -51,7 +65,7 @@ class DataFrame {
       List<String>.from(_columns.map<String>((c) => c.name));
 
   /// The dataframe columns indices
-  Map<int, String> get columnsIndices => _columnsIndices();
+  Map<int, String> get columnsIndices => _columnIndices();
 
   // ***********************
   // Constructors
@@ -66,7 +80,7 @@ class DataFrame {
       _columns.add(DataFrameColumn(name: k, type: t));
     });
     // fill the data
-    rows.forEach((row) => _matrix.addRow(row, _columnsIndices()));
+    rows.forEach((row) => _matrix.addRow(row, _columnIndices()));
   }
 
   static List<dynamic> _parseVals(
@@ -127,7 +141,7 @@ class DataFrame {
     final df = DataFrame();
     var i = 1;
     late List<String> _colNames;
-    final parser = CsvParser(StreamIterator(charStream));
+    final parser = CsvParser(CharIter(charStream));
     // ignore: literal_only_boolean_expressions
     for (var vals = await parser.parseLine();
         vals != null;
@@ -208,7 +222,7 @@ class DataFrame {
   /// Limit the dataframe to a subset of data
   List<Map<String, dynamic>> subset(int startIndex, int endIndex) {
     final data =
-        _matrix.rowsForIndexRange(startIndex, endIndex, _columnsIndices());
+        _matrix.rowsForIndexRange(startIndex, endIndex, _columnIndices());
     _matrix.data = _matrix.data.sublist(startIndex, endIndex);
     return data as List<Map<String, dynamic>>;
   }
@@ -284,7 +298,7 @@ class DataFrame {
 
   /// Add a row to the data
   void addRow(Map<String, dynamic> row) =>
-      _matrix.addRow(row, _columnsIndices());
+      _matrix.addRow(row, _columnIndices());
 
   /// Add a line of records to the data
   void addRecords(List<dynamic> records) => _matrix.data.add(records);
@@ -363,7 +377,7 @@ class DataFrame {
   Iterable<Map<String, dynamic>> _iterRows() sync* {
     var i = 0;
     while (i < _matrix.data.length) {
-      yield _matrix.rowForIndex(i, _columnsIndices());
+      yield _matrix.rowForIndex(i, _columnIndices());
       ++i;
     }
   }
@@ -421,7 +435,7 @@ class DataFrame {
     return ind;
   }
 
-  Map<int, String> _columnsIndices() {
+  Map<int, String> _columnIndices() {
     final ind = <int, String>{};
     var i = 0;
     for (final col in _columns) {

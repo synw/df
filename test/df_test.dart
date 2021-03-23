@@ -22,7 +22,7 @@ void main() {
       <dynamic>['b', 2, 2.0, date],
       <dynamic>['c', 3, null, null],
     ]);
-    expect(df.colRecords<String>('col1'), <String>['a', 'b']);
+    expect(df.colRecords<String>('col1'), <String>['a', 'b', 'c']);
     expect(df.colRecords<String>('col1', limit: 1), <String>['a']);
     final cols = <DataFrameColumn>[
       DataFrameColumn(name: 'col1', type: String),
