@@ -367,13 +367,14 @@ class DataFrame {
   }
 
   /// Get a new dataframe sorted by a column
-  DataFrame? sort_(String colName, {required NullSortBehavior nullBehavior}) =>
-      _sort(colName, inPlace: false, nullBehavior: nullBehavior) as DataFrame?;
+  DataFrame sort_(String colName, {required NullSortBehavior nullBehavior}) =>
+      DataFrame._copyWithMatrix(
+          this, _sort(colName, inPlace: false, nullBehavior: nullBehavior));
 
   /// In-place sort this dataframe by a column
   /// TODO(caseycrogers): Add support for custom comparator functions.
   void sort(String colName, {required NullSortBehavior nullBehavior}) =>
-      _matrix.data = _sort(colName, inPlace: true, nullBehavior: nullBehavior);
+      _sort(colName, inPlace: true, nullBehavior: nullBehavior);
 
   List<List<Object?>> _sort(String colName,
       {required bool inPlace, required NullSortBehavior nullBehavior}) {
