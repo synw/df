@@ -122,12 +122,8 @@ class CsvParser {
   }
 }
 
-/// After null safety `StreamIterator` became bad and should feel bad. Namely,
-/// it throws instead of returning null if you call `current` after reaching the
-/// end of stream.
-///
 /// This helper class returns null if the stream is complete and keeps track of
-/// each the csv line as it's seen so far.
+/// each the csv line as it's seen so far for constructing debug error messages.
 class CharIter {
   final StreamIterator<String> _iter;
 
