@@ -46,23 +46,15 @@ class DataMatrix {
 
   /// Get typed data from a column
   List<T?> typedRecordsForColumnIndex<T>(int columnIndex,
-      {int? offset, int? limit}) {
-    final dataFound = <T?>[];
-    var i = offset ?? 0;
-    for (final row in data) {
-      dataFound.add(typedRecordForColumnIndexInRow(columnIndex, row));
-      i++;
-      if (limit != null && i >= limit) {
-        break;
-      }
-    }
-    return dataFound;
-  }
+          {int? offset, int? limit}) =>
+      data
+          .sublist(offset ?? 0, limit)
+          .map((row) => typedRecordForColumnIndexInRow<T>(columnIndex, row))
+          .toList();
 
   /// Get typed data for a specific column in a row.
   T? typedRecordForColumnIndexInRow<T>(int columnIndex, List<Object?> row) {
     final rawVal = row[columnIndex];
-    T? typedVal;
     if (!(rawVal is T?)) {
       throw ArgumentError(
           'Requested the record ($rawVal) as a $T at index $columnIndex of the following row:\n\t$row\n '

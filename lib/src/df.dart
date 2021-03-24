@@ -223,8 +223,9 @@ class DataFrame {
   }
 
   /// Get typed records for a column
-  List<T?> colRecords<T>(String colName, {int? limit}) => _matrix
-      .typedRecordsForColumnIndex<T>(_indexForColumn(colName), limit: limit);
+  List<T?> colRecords<T>(String colName, {int? offset, int? limit}) =>
+      _matrix.typedRecordsForColumnIndex<T>(_indexForColumn(colName),
+          offset: offset, limit: limit);
 
   // ********* filter operations **********
 

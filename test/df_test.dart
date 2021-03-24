@@ -23,8 +23,10 @@ void main() {
       ['b', 2, 2.0, date],
       ['c', 3, null, null],
     ]);
-    expect(df.colRecords<String>('col1'), <String>['a', 'b', 'c']);
-    expect(df.colRecords<String>('col1', limit: 1), <String>['a']);
+    expect(df.colRecords<String>('col1'), ['a', 'b', 'c']);
+    expect(df.colRecords<String>('col1', limit: 1), ['a']);
+    expect(df.colRecords<String>('col1', offset: 1, limit: 1), <String>[]);
+    expect(df.colRecords<String>('col1', offset: 1, limit: 2), ['b']);
     final cols = <DataFrameColumn>[
       DataFrameColumn(name: 'col1', type: String),
       DataFrameColumn(name: 'col2', type: int),
