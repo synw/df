@@ -36,7 +36,7 @@ class DataFrame {
   Iterable<List<dynamic>> get _valueRows sync* {
     var i = 0;
     while (i < _matrix.data.length) {
-      var row = List<dynamic>.filled(_columns.length, null);
+      final row = List<dynamic>.filled(_columns.length, null);
       for (final mapEntry in _matrix.rowForIndex(i, _columnIndices()).entries) {
         row[_indexForColumn(mapEntry.key)] = mapEntry.value;
       }
@@ -224,7 +224,7 @@ class DataFrame {
     final data =
         _matrix.rowsForIndexRange(startIndex, endIndex, _columnIndices());
     _matrix.data = _matrix.data.sublist(startIndex, endIndex);
-    return data as List<Map<String, dynamic>>;
+    return data;
   }
 
   /// Get a new dataframe with a subset of data

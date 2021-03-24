@@ -5,14 +5,14 @@ import 'dart:async';
 ///
 /// See RFC4180 for details on CSV standard.
 class CsvParser {
-  final CharIter charIter;
+  final CharIter _charIter;
 
   /// Parses the characters from the given stream iterator as a csv (see RFC4180)
   /// and returns a list of rows where each row is a list of values.
   ///
   /// The strings supplied by [singleCharacterIterator] *must* be single element
   /// strings and the last character in the stream must be the newline character.
-  CsvParser(this.charIter);
+  CsvParser(this._charIter);
 
   /// Takes a single line and parses it into a list of values according to the
   /// csv standard.
@@ -20,10 +20,10 @@ class CsvParser {
   /// If the iterator has run out of valid csv lines [parseLine] will return null.
   Future<List<String>?> parseLine() async {
     final records = <String>[];
-    charIter.resetLine();
-    while (await charIter.moveNext()) {
+    _charIter.resetLine();
+    while (await _charIter.moveNext()) {
       final record = StringBuffer();
-      if (charIter.current == '"') {
+      if (_charIter.current == '"') {
         // If the csv field begins with a double quote, parse it with
         // proper character escaping - see RC4180 2.5-2.7.
         await parseEscapedField(record);
@@ -33,13 +33,13 @@ class CsvParser {
       records.add(record.toString());
       // Non empty lines should return before the while loop is complete.
       assert(
-          _isDelimiter(charIter.current),
+          _isDelimiter(_charIter.current),
           'A parsed field did not end in a delimiter. This should not happen '
           'and indicates a bug in df.dart.\n'
           'Please file a bug at:'
           'https://github.com/synw/df/issues\n'
-          '${charIter.currentErrorMessage}\n');
-      if (charIter.current == '\n') {
+          '${_charIter.currentErrorMessage}\n');
+      if (_charIter.current == '\n') {
         // Reached the end of the current csv line.
         return records;
       }
@@ -55,19 +55,19 @@ class CsvParser {
   Future<void> parseField(StringBuffer record) async {
     _assertMoveNextHasBeenCalled();
     // Special case for the empty field.
-    if (_isDelimiter(charIter.current)) return;
-    record.write(charIter.current);
-    while (await charIter.moveNext()) {
-      if (_isDelimiter(charIter.current)) {
+    if (_isDelimiter(_charIter.current)) return;
+    record.write(_charIter.current);
+    while (await _charIter.moveNext()) {
+      if (_isDelimiter(_charIter.current)) {
         // Reached end of field, exit
         return;
       }
-      if (charIter.current == '"') {
+      if (_charIter.current == '"') {
         throw FormatException('A field contained an unescaped double quote at: '
             'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-            '${charIter.currentErrorMessage}\n');
+            '${_charIter.currentErrorMessage}\n');
       }
-      record.write(charIter.current);
+      record.write(_charIter.current);
     }
     // Function should return before the while loop completes.
     throw AssertionError(
@@ -75,7 +75,7 @@ class CsvParser {
         'not happen and indicates a bug in df.dart.\n'
         'Please file a bug at:'
         'https://github.com/synw/df/issues\n'
-        '${charIter.currentErrorMessage}\n');
+        '${_charIter.currentErrorMessage}\n');
   }
 
   /// Like [parseField], but with support for character escaping.
@@ -87,29 +87,29 @@ class CsvParser {
     // has already been called.
     _assertMoveNextHasBeenCalled();
     assert(
-        charIter.current == '"',
+        _charIter.current == '"',
         'parseEscapedField was called on an unescaped field.\n'
-        '${charIter.currentErrorMessage}\n');
-    while (await charIter.moveNext()) {
-      if (charIter.current == '"') {
+        '${_charIter.currentErrorMessage}\n');
+    while (await _charIter.moveNext()) {
+      if (_charIter.current == '"') {
         // Step past the current double quote.
-        await charIter.moveNext();
+        await _charIter.moveNext();
         // Silly linter doesn't know about side-effects.
         // ignore: invariant_booleans
-        if (charIter.current != '"') {
+        if (_charIter.current != '"') {
           // Single double quote, this is the end of the escaped sequence.
           return;
         }
       }
       // The current character is either a regular character or an escaped
       // double quote-write it to record.
-      record.write(charIter.current);
+      record.write(_charIter.current);
     }
     // Reached end of line without closing the escape quote.
     throw FormatException(
         'A field contained an escape quote without a closing escape quote. '
         'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-        '${charIter.currentErrorMessage}\n');
+        '${_charIter.currentErrorMessage}\n');
   }
 
   bool _isDelimiter(String? char) => char == ',' || char == '\n';
@@ -117,7 +117,7 @@ class CsvParser {
   void _assertMoveNextHasBeenCalled() {
     // CharacterRange returns an empty String if moveNext hasn't been called yet.
     // This assert will also pass if the character range is empty.
-    assert(charIter.current != '',
+    assert(_charIter.current != '',
         'You must call \'moveNext\' before calling \'parseField\'.');
   }
 }
