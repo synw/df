@@ -197,6 +197,8 @@ void main() {
     expect(df.colRecords<int>('col1'), [4, 3, 2, 1]);
     final df2 = df.sort_('col1', nullBehavior: NullSortBehavior.max)!;
     expect(df2.colRecords<int>('col1'), [1, 2, 3, 4]);
+    // Ensure base DF has not been modified
+    expect(df.colRecords<int>('col1'), [4, 3, 2, 1]);
     try {
       df.sort_('wrong_col', nullBehavior: NullSortBehavior.max);
     } catch (e) {

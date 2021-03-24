@@ -387,25 +387,13 @@ class DataFrame {
 
   int _compareRows(List<Object?> rowA, List<Object?> rowB, int index,
       NullSortBehavior nullBehavior) {
-    final Object? recordA = _matrix
-            .typedRecordForColumnIndexInRow<Comparable<Object>?>(index, rowA) ??
+    final recordA = _matrix.typedRecordForColumnIndexInRow<Comparable<Object>?>(
+            index, rowA) ??
         _replaceNullForSort(nullBehavior);
-    final Object? recordB =
-        _matrix.typedRecordForColumnIndexInRow<Object?>(index, rowA) ??
-            _replaceNullForSort(nullBehavior);
-    return _asComparable(recordA, nullBehavior)
-        .compareTo(_asComparable(recordB, nullBehavior));
-  }
-
-  Comparable<Object> _asComparable(
-      Object? record, NullSortBehavior nullBehavior) {
-    if (record != null && !(record is Comparable<Object>)) {
-      throw ArgumentError(
-          'Record $record was type ${record.runtimeType} which is not a '
-          'subclass of Comparable<Object>. Only columns containing comparable '
-          'objects can be sorted.');
-    }
-    return (record ?? _replaceNullForSort(nullBehavior)) as Comparable<Object>;
+    final recordB = _matrix.typedRecordForColumnIndexInRow<Comparable<Object>?>(
+            index, rowA) ??
+        _replaceNullForSort(nullBehavior);
+    return recordA.compareTo(recordB);
   }
 
   int _indexForColumn(String colName) {
