@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:jiffy/jiffy.dart';
-import 'package:meta/meta.dart';
 
 import 'column.dart';
 import 'exceptions.dart';
@@ -31,26 +29,15 @@ class DataFrame {
   // ********* data **********
 
   /// An iterable of rows data
-  Iterable<Map<String, dynamic>> get rows => _iterRows();
+  Iterable<Map<String, Object>> get rows => _iterRows();
 
-  Iterable<List<dynamic>> get _valueRows sync* {
-    var i = 0;
-    while (i < _matrix.data.length) {
-      final row = List<dynamic>.filled(_columns.length, null);
-      for (final mapEntry in _matrix.rowForIndex(i, _columnIndices()).entries) {
-        row[_indexForColumn(mapEntry.key)] = mapEntry.value;
-      }
-      yield row;
-      ++i;
-    }
-  }
+  Iterable<List<Object?>> get _valueRows => _matrix.data;
 
-  /// An iterable of rows of values of data.
-  /// Distinct from `df.rows.toList()` in that unspecified columns are converted
-  /// to null values.
-  List<List<dynamic>> get dataset => _valueRows.toList();
+  /// An iterable of rows of data where each row is a list containing null
+  /// values for any unspecified columns.
+  List<List<Object?>> get dataset => _valueRows.toList();
 
-  set dataset(List<List<dynamic>> dataPoints) => _matrix.data = dataPoints;
+  set dataset(List<List<Object?>> dataPoints) => _matrix.data = dataPoints;
 
   // ********* info **********
 
@@ -65,17 +52,19 @@ class DataFrame {
       List<String>.from(_columns.map<String>((c) => c.name));
 
   /// The dataframe columns indices
-  Map<int, String> get columnsIndices => _columnIndices();
+  List<String> get columnsIndices => _columnIndices();
 
   // ***********************
   // Constructors
   // ***********************
 
   /// Build a dataframe from a list of rows
-  DataFrame.fromRows(List<Map<String, dynamic>> rows)
+  DataFrame.fromRows(List<Map<String, Object?>> rows)
       : assert(rows.isNotEmpty) {
     // create _columns from the first datapoint
-    rows[0].forEach((k, dynamic v) {
+    // TODO(caseycrogers): this will fail if the first row contains any null or unspecified values.
+    //   Consider crawling the input for non-null values and/or having users explicitly specify types.
+    rows[0].forEach((k, Object? v) {
       final t = v.runtimeType;
       _columns.add(DataFrameColumn(name: k, type: t));
     });
@@ -83,14 +72,14 @@ class DataFrame {
     rows.forEach((row) => _matrix.addRow(row, _columnIndices()));
   }
 
-  static List<dynamic> _parseVals(
-      List<dynamic> vals, List<DataFrameColumn> columnsNames,
+  static List<Object?> _parseVals(
+      List<Object> vals, List<DataFrameColumn> columnsNames,
       {String? dateFormat,
       String? timestampCol,
       TimestampFormat? timestampFormat}) {
     var vi = 0;
-    final colValues = <dynamic>[];
-    vals.forEach((dynamic v) {
+    final colValues = <Object?>[];
+    vals.forEach((Object v) {
       // cast records to the right type
       switch (columnsNames[vi].type) {
         case int:
@@ -171,7 +160,7 @@ class DataFrame {
             timestampFormat: timestampFormat);
         df._matrix.data.add(colValues);
       }
-      ++i;
+      i++;
     }
     if (verbose) {
       print('Parsed ${df._matrix.data.length} rows');
@@ -208,7 +197,7 @@ class DataFrame {
     );
   }
 
-  DataFrame._copyWithMatrix(DataFrame df, List<List<dynamic>> matrix) {
+  DataFrame._copyWithMatrix(DataFrame df, List<List<Object?>> matrix) {
     _columns = df._columns;
     _matrix.data = matrix;
   }
@@ -220,7 +209,7 @@ class DataFrame {
   // ********* select operations **********
 
   /// Limit the dataframe to a subset of data
-  List<Map<String, dynamic>> subset(int startIndex, int endIndex) {
+  List<Map<String, Object>> subset(int startIndex, int endIndex) {
     final data =
         _matrix.rowsForIndexRange(startIndex, endIndex, _columnIndices());
     _matrix.data = _matrix.data.sublist(startIndex, endIndex);
@@ -273,13 +262,7 @@ class DataFrame {
   /// It is possible to provide a custom list of values
   /// considered as null with [nullValues]
   int countNulls_(String colName,
-      {List<dynamic> nullValues = const <dynamic>[
-        null,
-        'null',
-        'nan',
-        'NULL',
-        'N/A'
-      ]}) {
+      {List<Object?> nullValues = const [null, 'null', 'nan', 'NULL', 'N/A']}) {
     final n = _matrix.countForValues(_indexForColumn(colName), nullValues);
     return n;
   }
@@ -289,7 +272,7 @@ class DataFrame {
   /// It is possible to provide a custom list of values
   /// considered as zero with [zeroValues]
   int countZeros_(String colName,
-      {List<dynamic> zeroValues = const <dynamic>[0]}) {
+      {List<Object> zeroValues = const <Object>[0]}) {
     final n = _matrix.countForValues(_indexForColumn(colName), zeroValues);
     return n;
   }
@@ -297,11 +280,10 @@ class DataFrame {
   // ********* insert operations **********
 
   /// Add a row to the data
-  void addRow(Map<String, dynamic> row) =>
-      _matrix.addRow(row, _columnIndices());
+  void addRow(Map<String, Object> row) => _matrix.addRow(row, _columnIndices());
 
   /// Add a line of records to the data
-  void addRecords(List<dynamic> records) => _matrix.data.add(records);
+  void addRecords(List<Object> records) => _matrix.data.add(records);
 
   // ********* delete operations **********
 
@@ -331,7 +313,7 @@ class DataFrame {
   double sum_(String colName) => _matrix.sumCol<num>(_indexForColumn(colName));
 
   /// Mean of a column
-  double mean_(String colName, {required NullAggregation nullAggregation}) =>
+  double mean_(String colName, {required NullMeanBehavior nullAggregation}) =>
       _matrix.meanCol(_indexForColumn(colName),
           nullAggregation: nullAggregation);
 
@@ -376,49 +358,54 @@ class DataFrame {
   // Internal methods
   // ***********************
 
-  Iterable<Map<String, dynamic>> _iterRows() sync* {
+  Iterable<Map<String, Object>> _iterRows() sync* {
     var i = 0;
     while (i < _matrix.data.length) {
       yield _matrix.rowForIndex(i, _columnIndices());
-      ++i;
+      i++;
     }
   }
 
-  /// Get a new dataframe ssorted by a column
-  DataFrame? sort_(String colName) =>
-      _sort(colName, inPlace: false) as DataFrame?;
+  /// Get a new dataframe sorted by a column
+  DataFrame? sort_(String colName, {required NullSortBehavior nullBehavior}) =>
+      _sort(colName, inPlace: false, nullBehavior: nullBehavior) as DataFrame?;
 
-  /// Sort this dataframe by a column
-  void sort(String colName) => _sort(colName, inPlace: true);
+  /// In-place sort this dataframe by a column
+  /// TODO(caseycrogers): Add support for custom comparator functions.
+  void sort(String colName, {required NullSortBehavior nullBehavior}) =>
+      _matrix.data = _sort(colName, inPlace: true, nullBehavior: nullBehavior);
 
-  dynamic _sort(String colName, {required bool inPlace}) {
-    final colData =
-        _matrix.typedRecordsForColumnIndex<dynamic>(_indexForColumn(colName));
-    // create a map of index/data
-    final dataIndex = <int, dynamic>{};
-    var i = 0;
-    colData.forEach((dynamic record) {
-      dataIndex[i] = record;
-      ++i;
-    });
-    // sort the index map from values
-    final sortedKeys = dataIndex.keys.toList(growable: false)
-      ..sort((k1, k2) => (dataIndex[k1] as dynamic)
-          .compareTo(dataIndex[k2] as dynamic) as int);
-    final sortedMap = LinkedHashMap<int?, dynamic>.fromIterable(sortedKeys,
-        key: (dynamic k) => k as int?, value: (dynamic k) => dataIndex[k]);
-    final order = sortedMap.keys;
-    // rebuild the dataset in order
-    final _newMatrix = <List<dynamic>>[];
-    for (final i in order) {
-      _newMatrix.add(_matrix.data[i!]);
+  List<List<Object?>> _sort(String colName,
+      {required bool inPlace, required NullSortBehavior nullBehavior}) {
+    final newMatrixData = inPlace
+        ? _matrix.data
+        // Deep copy the rows.
+        : _matrix.data.map((row) => List<Object?>.from(row)).toList();
+    return newMatrixData
+      ..sort((a, b) => _compareRows(a, b, columnIndex(colName), nullBehavior));
+  }
+
+  int _compareRows(List<Object?> rowA, List<Object?> rowB, int index,
+      NullSortBehavior nullBehavior) {
+    final Object? recordA = _matrix
+            .typedRecordForColumnIndexInRow<Comparable<Object>?>(index, rowA) ??
+        _replaceNullForSort(nullBehavior);
+    final Object? recordB =
+        _matrix.typedRecordForColumnIndexInRow<Object?>(index, rowA) ??
+            _replaceNullForSort(nullBehavior);
+    return _asComparable(recordA, nullBehavior)
+        .compareTo(_asComparable(recordB, nullBehavior));
+  }
+
+  Comparable<Object> _asComparable(
+      Object? record, NullSortBehavior nullBehavior) {
+    if (record != null && !(record is Comparable<Object>)) {
+      throw ArgumentError(
+          'Record $record was type ${record.runtimeType} which is not a '
+          'subclass of Comparable<Object>. Only columns containing comparable '
+          'objects can be sorted.');
     }
-    if (!inPlace) {
-      return DataFrame._copyWithMatrix(this, _newMatrix);
-    } else {
-      _matrix.data = _newMatrix;
-    }
-    return null;
+    return (record ?? _replaceNullForSort(nullBehavior)) as Comparable<Object>;
   }
 
   int _indexForColumn(String colName) {
@@ -429,7 +416,7 @@ class DataFrame {
         ind = i;
         break;
       }
-      ++i;
+      i++;
     }
     if (ind == null) {
       throw ColumnNotFoundException('Can not find column $colName');
@@ -437,13 +424,48 @@ class DataFrame {
     return ind;
   }
 
-  Map<int, String> _columnIndices() {
-    final ind = <int, String>{};
-    var i = 0;
-    for (final col in _columns) {
-      ind[i] = col.name;
-      ++i;
-    }
-    return ind;
+  List<String> _columnIndices() => columns.map((c) => c.name).toList();
+}
+
+/// How to treat nulls when taking the average over a column.
+enum NullMeanBehavior {
+  /// Skip null values.
+  ///   eg mean(1, 2, null) => (1 + 2) / 2.0 => 1.5
+  skip,
+
+  /// Convert null values to zero.
+  ///   eg mean(1, 2, null) => (1 + 1 + 0) / 3.0 => 1
+  zero,
+}
+
+/// How to treat nulls when sorting a data frame by a particular column.
+enum NullSortBehavior {
+  /// Treat null values as the minimum numerical value.
+  ///   eg Sort(-1, 1, null) => null, -1, 1
+  min,
+
+  /// Treat null values as the maximum numerical value.
+  ///   eg Sort(-1, 1, null) => -1, 1, null,
+  max,
+}
+
+Comparable<Object> _replaceNullForSort(NullSortBehavior nullSortBehavior) =>
+    nullSortBehavior == NullSortBehavior.min
+        ? _StaticComparable.minComparable
+        : _StaticComparable.maxComparable;
+
+class _StaticComparable implements Comparable<Object> {
+  final bool _isMin;
+
+  static final _StaticComparable minComparable = _StaticComparable._(true);
+  static final _StaticComparable maxComparable = _StaticComparable._(false);
+
+  _StaticComparable._(bool isMin) : _isMin = isMin;
+
+  @override
+  int compareTo(Object other) {
+    // Static comparable is equal to itself.
+    if (other == this) return 0;
+    return _isMin ? -1 : 1;
   }
 }

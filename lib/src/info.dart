@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import 'column.dart';
 
 /// A class to manage dataframe info prints

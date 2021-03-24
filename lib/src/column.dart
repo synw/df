@@ -1,5 +1,4 @@
 import 'package:jiffy/jiffy.dart';
-import 'package:meta/meta.dart';
 
 /// A data frame column
 class DataFrameColumn {

@@ -1,48 +1,43 @@
 import 'package:ml_linalg/vector.dart';
 
+import '../df.dart';
+
 /// A class to manage the data inside the [DataFrame]
 class DataMatrix {
   /// The dataset
-  List<List<dynamic>> data = <List<dynamic>>[];
+  List<List<Object?>> data = [];
 
   // ********* insert operations **********
 
   /// Add a row
-  void addRow(Map<String, dynamic> row, Map<int, String> indices) {
-    //print("DF ADD ROW $row / $indices");
-    final r = <dynamic>[];
-    for (var i = 0; i < indices.length; i++) {
-      final keyName = indices[i];
-      r.add(row[keyName]);
-    }
-    data.add(r);
-  }
+  void addRow(Map<String, Object?> row, List<String> columnNames) =>
+      data.add(columnNames.map((colName) => row[colName]).toList());
 
   // ********* select operations **********
 
   /// Row for an index position
-  Map<String, dynamic> rowForIndex(
-      int index, Map<int, String> indicesToColumnNames) {
-    final row = <String, dynamic>{};
+  Map<String, Object> rowForIndex(
+      int index, List<String> indicesToColumnNames) {
+    final row = <String, Object>{};
     final dataRow = data[index];
     var i = 0;
-    dataRow.forEach((dynamic item) {
-      row[indicesToColumnNames[i]!] = item;
-      ++i;
+    dataRow.forEach((item) {
+      if (item != null) row[indicesToColumnNames[i]] = item;
+      i++;
     });
     return row;
   }
 
   /// Rows for an index range of positions
-  List<Map<String, dynamic>> rowsForIndexRange(
-      int startIndex, int endIndex, Map<int, String> indices) {
-    final dataRows = <Map<String, dynamic>>[];
+  List<Map<String, Object>> rowsForIndexRange(
+      int startIndex, int endIndex, List<String> columnNames) {
+    final dataRows = <Map<String, Object>>[];
     for (final row in data.sublist(startIndex, endIndex)) {
-      final dataRow = <String, dynamic>{};
+      final dataRow = <String, Object>{};
       var i = 0;
-      row.forEach((dynamic item) {
-        dataRow[indices[i]!] = item;
-        ++i;
+      row.forEach((Object? item) {
+        if (item != null) dataRow[columnNames[i]] = item;
+        i++;
       });
       dataRows.add(dataRow);
     }
@@ -50,33 +45,36 @@ class DataMatrix {
   }
 
   /// Get typed data from a column
-  List<T?> typedRecordsForColumnIndex<T>(int columnIndex, {int? limit}) {
+  List<T?> typedRecordsForColumnIndex<T>(int columnIndex,
+      {int? offset, int? limit}) {
     final dataFound = <T?>[];
-    var i = 0;
+    var i = offset ?? 0;
     for (final row in data) {
-      T? val;
-      try {
-        val = row[columnIndex] as T?;
-      } catch (e) {
-        rethrow;
-        //throw TypeConversionException(
-        //    "Can not convert record $val to type $T $e");
-      }
-      dataFound.add(val);
+      dataFound.add(typedRecordForColumnIndexInRow(columnIndex, row));
       i++;
-      if (limit != null) {
-        if (i >= limit) {
-          break;
-        }
+      if (limit != null && i >= limit) {
+        break;
       }
     }
     return dataFound;
   }
 
+  /// Get typed data for a specific column in a row.
+  T? typedRecordForColumnIndexInRow<T>(int columnIndex, List<Object?> row) {
+    final rawVal = row[columnIndex];
+    T? typedVal;
+    if (!(rawVal is T?)) {
+      throw ArgumentError(
+          'Requested the record ($rawVal) as a $T at index $columnIndex of the following row:\n\t$row\n '
+          'but the record is a ${rawVal.runtimeType} which is not a subtype of $T.');
+    }
+    return row[columnIndex] as T?;
+  }
+
   // ********* count operations **********
 
   /// Count values in a column
-  int countForValues(int columnIndex, List<dynamic> values) {
+  int countForValues(int columnIndex, List<Object?> values) {
     var n = 0;
     data.forEach((row) {
       if (values.contains(row[columnIndex])) {
@@ -90,46 +88,34 @@ class DataMatrix {
 
   /// Sum a column
   double sumCol<T>(int columnIndex) {
-    return _getVector(columnIndex, NullAggregation.skip).sum();
+    return _getVector(columnIndex, NullMeanBehavior.skip).sum();
   }
 
   /// Mean a column
-  double meanCol(int columnIndex, {required NullAggregation nullAggregation}) {
+  double meanCol(int columnIndex, {required NullMeanBehavior nullAggregation}) {
     return _getVector(columnIndex, nullAggregation).mean();
   }
 
   /// Get the max value of a column
   double maxCol(int columnIndex) {
-    return _getVector(columnIndex, NullAggregation.skip).max();
+    return _getVector(columnIndex, NullMeanBehavior.skip).max();
   }
 
   /// Get the min value of a column
   double minCol(int columnIndex) {
-    return _getVector(columnIndex, NullAggregation.skip).min();
+    return _getVector(columnIndex, NullMeanBehavior.skip).min();
   }
 
   // ***********************
   // Internal methods
   // ***********************
 
-  Vector _getVector(int columnIndex, NullAggregation nullAggregation) {
+  Vector _getVector(int columnIndex, NullMeanBehavior nullBehavior) {
     final rawData = typedRecordsForColumnIndex<num>(columnIndex);
-    final nullFiltered = nullAggregation == NullAggregation.skip
+    final nullFiltered = nullBehavior == NullMeanBehavior.skip
         ? rawData.where((e) => e != null)
         : rawData.map((e) => e ?? 0.0);
     // Cast is safe because nulls were eliminated above out above.
     return Vector.fromList(nullFiltered.map((e) => e!).toList());
   }
-}
-
-/// How to treat nulls when aggregating a column. Only applicable to the mean
-/// aggregation - min, max and sum all use skip aggregation.
-enum NullAggregation {
-  /// Skip null values.
-  ///   eg mean(1, 2, null) => (1 + 2) / 2.0 => 1.5
-  skip,
-
-  /// convert null values to zero.
-  ///   eg mean(1, 2, null) => (1 + 1 + 0) / 3.0 => 1
-  zero,
 }
