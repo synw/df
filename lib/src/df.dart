@@ -398,19 +398,14 @@ class DataFrame {
   }
 
   int _indexForColumn(String colName) {
-    int? ind;
     var i = 0;
     for (final col in _columns) {
       if (colName == col.name) {
-        ind = i;
-        break;
+        return i;
       }
       i++;
     }
-    if (ind == null) {
-      throw ColumnNotFoundException('Can not find column $colName');
-    }
-    return ind;
+    throw ColumnNotFoundException('Can not find column $colName');
   }
 
   List<String> _columnIndices() => columns.map((c) => c.name).toList();
