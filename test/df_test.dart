@@ -1,3 +1,4 @@
+import 'package:df/src/matrix.dart';
 import 'package:test/test.dart';
 import 'package:df/df.dart';
 
@@ -153,11 +154,15 @@ void main() {
     final rows = <Map<String, dynamic>>[
       <String, dynamic>{'col1': 1, 'col2': 2},
       <String, dynamic>{'col1': 1, 'col2': 1},
+      <String, dynamic>{'col1': null},
     ];
     df = DataFrame.fromRows(rows)..head();
     expect(df.max_('col2'), 2.0);
     expect(df.min_('col2'), 1.0);
-    expect(df.mean_('col1'), 1.0);
+    expect(df.mean_('col1', nullAggregation: NullAggregation.skip), 1.0);
+    expect(df.mean_('col2', nullAggregation: NullAggregation.skip), 1.5);
+    expect(df.mean_('col1', nullAggregation: NullAggregation.zero), 2.0 / 3.0);
+    expect(df.mean_('col2', nullAggregation: NullAggregation.zero), 1.0);
     expect(df.sum_('col1'), 2.0);
   });
 

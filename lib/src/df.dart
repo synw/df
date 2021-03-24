@@ -331,7 +331,9 @@ class DataFrame {
   double sum_(String colName) => _matrix.sumCol<num>(_indexForColumn(colName));
 
   /// Mean of a column
-  double mean_(String colName) => _matrix.meanCol(_indexForColumn(colName));
+  double mean_(String colName, {required NullAggregation nullAggregation}) =>
+      _matrix.meanCol(_indexForColumn(colName),
+          nullAggregation: nullAggregation);
 
   /// Get the max value of a column
   double max_(String colName) => _matrix.maxCol(_indexForColumn(colName));

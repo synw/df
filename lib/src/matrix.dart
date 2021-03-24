@@ -11,12 +11,10 @@ class DataMatrix {
   void addRow(Map<String, dynamic> row, Map<int, String> indices) {
     //print("DF ADD ROW $row / $indices");
     final r = <dynamic>[];
-    var i = 0;
-    row.forEach((k, dynamic v) {
+    for (var i = 0; i < indices.length; i++) {
       final keyName = indices[i];
       r.add(row[keyName]);
-      ++i;
-    });
+    }
     data.add(r);
   }
 
@@ -56,17 +54,16 @@ class DataMatrix {
     final dataFound = <T?>[];
     var i = 0;
     for (final row in data) {
-      print(row.runtimeType);
       T? val;
       try {
-        val = row[columnIndex] as T;
+        val = row[columnIndex] as T?;
       } catch (e) {
         rethrow;
         //throw TypeConversionException(
         //    "Can not convert record $val to type $T $e");
       }
       dataFound.add(val);
-      ++i;
+      i++;
       if (limit != null) {
         if (i >= limit) {
           break;
@@ -93,47 +90,46 @@ class DataMatrix {
 
   /// Sum a column
   double sumCol<T>(int columnIndex) {
-    final rawData = typedRecordsForColumnIndex<T>(columnIndex);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.sum();
+    return _getVector(columnIndex, NullAggregation.skip).sum();
   }
 
   /// Mean a column
-  double meanCol(int columnIndex) {
-    final rawData = typedRecordsForColumnIndex<double>(columnIndex);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.mean();
+  double meanCol(int columnIndex, {required NullAggregation nullAggregation}) {
+    return _getVector(columnIndex, nullAggregation).mean();
   }
 
   /// Get the max value of a column
   double maxCol(int columnIndex) {
-    final rawData = typedRecordsForColumnIndex<double>(columnIndex);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.max();
+    return _getVector(columnIndex, NullAggregation.skip).max();
   }
 
   /// Get the min value of a column
   double minCol(int columnIndex) {
-    final rawData = typedRecordsForColumnIndex<double>(columnIndex);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.min();
+    return _getVector(columnIndex, NullAggregation.skip).min();
   }
 
   // ***********************
   // Internal methods
   // ***********************
 
-  double _numToDouble<T>(T value) {
-    double n;
-    if (T == int || T == num) {
-      n = (value as num).toDouble();
-    } else {
-      n = value as double;
-    }
-    return n;
+  Vector _getVector(int columnIndex, NullAggregation nullAggregation) {
+    final rawData = typedRecordsForColumnIndex<num>(columnIndex);
+    final nullFiltered = nullAggregation == NullAggregation.skip
+        ? rawData.where((e) => e != null)
+        : rawData.map((e) => e ?? 0.0);
+    // Cast is safe because nulls were eliminated above out above.
+    return Vector.fromList(nullFiltered.map((e) => e!).toList());
   }
+}
+
+/// How to treat nulls when aggregating a column. Only applicable to the mean
+/// aggregation - min, max and sum all use skip aggregation.
+enum NullAggregation {
+  /// Skip null values.
+  ///   eg mean(1, 2, null) => (1 + 2) / 2.0 => 1.5
+  skip,
+
+  /// convert null values to zero.
+  ///   eg mean(1, 2, null) => (1 + 1 + 0) / 3.0 => 1
+  zero,
 }
