@@ -5,38 +5,23 @@ import 'dart:async';
 ///
 /// See RFC4180 for details on CSV standard.
 class CsvParser {
-  final StreamIterator<String> _charIter;
-
-  // Used for providing context in error messages.
-  StringBuffer _lineSoFar = StringBuffer();
+  final CharIter _charIter;
 
   /// Parses the characters from the given stream iterator as a csv (see RFC4180)
   /// and returns a list of rows where each row is a list of values.
   ///
   /// The strings supplied by [singleCharacterIterator] *must* be single element
   /// strings and the last character in the stream must be the newline character.
-  CsvParser(StreamIterator<String> singleCharacterIterator)
-      : _charIter = singleCharacterIterator;
-
-  // Use this instead of `_charIter.moveNext()` to keep `_lineSoFar` in sync.
-  Future<bool> _moveNext() async {
-    final ret = await _charIter.moveNext();
-    assert(
-        _charIter.current == null || _charIter.current.length == 1,
-        'Character stream produced a string longer than one character: '
-        '${_charIter.current}');
-    _lineSoFar.write(_charIter.current);
-    return ret;
-  }
+  CsvParser(this._charIter);
 
   /// Takes a single line and parses it into a list of values according to the
   /// csv standard.
   ///
   /// If the iterator has run out of valid csv lines [parseLine] will return null.
-  Future<List<String>> parseLine() async {
+  Future<List<String>?> parseLine() async {
     final records = <String>[];
-    _lineSoFar = StringBuffer();
-    while (await _moveNext()) {
+    _charIter.resetLine();
+    while (await _charIter.moveNext()) {
       final record = StringBuffer();
       if (_charIter.current == '"') {
         // If the csv field begins with a double quote, parse it with
@@ -53,7 +38,7 @@ class CsvParser {
           'and indicates a bug in df.dart.\n'
           'Please file a bug at:'
           'https://github.com/synw/df/issues\n'
-          '$_getCurrentCharacterMessage\n');
+          '${_charIter.currentErrorMessage}\n');
       if (_charIter.current == '\n') {
         // Reached the end of the current csv line.
         return records;
@@ -72,7 +57,7 @@ class CsvParser {
     // Special case for the empty field.
     if (_isDelimiter(_charIter.current)) return;
     record.write(_charIter.current);
-    while (await _moveNext()) {
+    while (await _charIter.moveNext()) {
       if (_isDelimiter(_charIter.current)) {
         // Reached end of field, exit
         return;
@@ -80,7 +65,7 @@ class CsvParser {
       if (_charIter.current == '"') {
         throw FormatException('A field contained an unescaped double quote at: '
             'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-            '$_getCurrentCharacterMessage\n');
+            '${_charIter.currentErrorMessage}\n');
       }
       record.write(_charIter.current);
     }
@@ -90,7 +75,7 @@ class CsvParser {
         'not happen and indicates a bug in df.dart.\n'
         'Please file a bug at:'
         'https://github.com/synw/df/issues\n'
-        '$_getCurrentCharacterMessage\n');
+        '${_charIter.currentErrorMessage}\n');
   }
 
   /// Like [parseField], but with support for character escaping.
@@ -104,11 +89,11 @@ class CsvParser {
     assert(
         _charIter.current == '"',
         'parseEscapedField was called on an unescaped field.\n'
-        '$_getCurrentCharacterMessage\n');
-    while (await _moveNext()) {
+        '${_charIter.currentErrorMessage}\n');
+    while (await _charIter.moveNext()) {
       if (_charIter.current == '"') {
         // Step past the current double quote.
-        await _moveNext();
+        await _charIter.moveNext();
         // Silly linter doesn't know about side-effects.
         // ignore: invariant_booleans
         if (_charIter.current != '"') {
@@ -124,18 +109,55 @@ class CsvParser {
     throw FormatException(
         'A field contained an escape quote without a closing escape quote. '
         'See section 2.5 of https://tools.ietf.org/html/rfc4180.\n'
-        '$_getCurrentCharacterMessage\n');
+        '${_charIter.currentErrorMessage}\n');
   }
 
-  bool _isDelimiter(String char) => char == ',' || char == '\n';
-
-  String get _getCurrentCharacterMessage =>
-      'Error at character \'${_charIter.current}\' at position #${_lineSoFar.length - 1} of line:\n$_lineSoFar...';
+  bool _isDelimiter(String? char) => char == ',' || char == '\n';
 
   void _assertMoveNextHasBeenCalled() {
     // CharacterRange returns an empty String if moveNext hasn't been called yet.
     // This assert will also pass if the character range is empty.
     assert(_charIter.current != '',
         'You must call \'moveNext\' before calling \'parseField\'.');
+  }
+}
+
+/// This helper class returns null if the stream is complete and keeps track of
+/// each the csv line as it's seen so far for constructing debug error messages.
+class CharIter {
+  final StreamIterator<String> _iter;
+
+  /// The iterators current character.
+  String? current;
+
+  /// Construct a character iterator from a StreamIterator.
+  CharIter(Stream<String> iter) : _iter = StreamIterator(iter);
+
+  /// The characters parsed from the current line so far. Used for producing
+  /// debug messages.
+  final StringBuffer _lineSoFar = StringBuffer();
+
+  /// Produce an error message corresponding to the current line.
+  String get currentErrorMessage =>
+      'Error at character \'$current\' at position #${_lineSoFar.length - 1} of line:\n$_lineSoFar...';
+
+  /// Reset the debug message when a new line is reached.
+  void resetLine() => _lineSoFar.clear();
+
+  /// Move to the next character in the iterator. Returns false and sets current
+  /// to null if the end of the iterator is reached.
+  Future<bool> moveNext() async {
+    final ret = await _iter.moveNext();
+    if (ret) {
+      assert(
+          _iter.current.length == 1,
+          'Character stream produced a string longer than one character: '
+          '${_iter.current}');
+      current = _iter.current;
+      _lineSoFar.write(current);
+    } else {
+      current = null;
+    }
+    return ret;
   }
 }

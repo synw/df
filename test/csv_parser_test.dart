@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:df/src/util/csv_parser.dart';
 import 'package:test/test.dart';
 
-StreamIterator<String> _iterFromLine(String line) =>
-    StreamIterator(Stream.fromIterable(line.split('')));
+CharIter _iterFromLine(String line) =>
+    CharIter(Stream.fromIterable(line.split('')));
 
-Future<String> _remaining(StreamIterator<String> charIter) async {
-  final buff = StringBuffer(charIter.current);
+Future<String> _remaining(CharIter charIter) async {
+  final buff = StringBuffer(charIter.current ?? '');
   while (await charIter.moveNext()) {
     buff.write(charIter.current);
   }
@@ -16,7 +16,7 @@ Future<String> _remaining(StreamIterator<String> charIter) async {
 
 void main() {
   test('test parseField', () async {
-    StreamIterator<String> iter;
+    CharIter iter;
     StringBuffer record;
 
     // Parse first field.
@@ -61,7 +61,7 @@ void main() {
   });
 
   test('test parseField errors', () async {
-    StreamIterator<String> iter;
+    CharIter iter;
     StringBuffer record;
 
     // A double quote in an unescaped field throws an error.
@@ -78,7 +78,7 @@ void main() {
   });
 
   test('test parseEscapedField', () async {
-    StreamIterator<String> iter;
+    CharIter iter;
     StringBuffer record;
 
     // Escape quotes aren't added to record.
@@ -130,7 +130,7 @@ void main() {
   });
 
   test('test parseEscapedField errors', () async {
-    StreamIterator<String> iter;
+    CharIter iter;
     StringBuffer record;
 
     // A FormatException is thrown if there's a hanging escape quote.
@@ -142,7 +142,7 @@ void main() {
   });
 
   test('test parseLine', () async {
-    StreamIterator<String> iter;
+    CharIter iter;
 
     // Parse a generic line with no escaping.
     iter = _iterFromLine('a,bc,def\nx,y,z\n');
@@ -176,7 +176,7 @@ void main() {
   });
 
   test('test parseLine errors', () async {
-    StreamIterator<String> iter;
+    CharIter iter;
 
     // Parse a line with an unclosed escape quote.
     iter = _iterFromLine('a,"b"",c\n');

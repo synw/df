@@ -1,13 +1,12 @@
 import 'package:jiffy/jiffy.dart';
-import 'package:meta/meta.dart';
 
 /// A data frame column
 class DataFrameColumn {
   /// Provide a [name] and [type]
-  DataFrameColumn({@required this.name, @required this.type});
+  DataFrameColumn({required this.name, required this.type});
 
   /// The column's name
-  String name;
+  final String name;
 
   /// The column's type
   Type type;
@@ -19,10 +18,9 @@ class DataFrameColumn {
   ///
   /// eg '\n23' and ' 23' will evaluate as strings and retain their newline and
   /// space respectively.
-  DataFrameColumn.inferFromRecord(String record, this.name, {String dateFormat})
-      : assert(name != null),
-        assert(record != null) {
-    type = String;
+  DataFrameColumn.inferFromRecord(String record, this.name,
+      {String? dateFormat})
+      : type = String {
     // tryParse will ignore whitespace, but values with white space should be
     // treated as strings.
     if (!record.contains(RegExp('[\s\n]')) && int.tryParse(record) != null) {

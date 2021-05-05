@@ -1,49 +1,43 @@
-import 'package:ml_linalg/vector.dart';
+import 'dart:math';
+
+import '../df.dart';
 
 /// A class to manage the data inside the [DataFrame]
 class DataMatrix {
   /// The dataset
-  List<List<dynamic>> data = <List<dynamic>>[];
+  List<List<Object?>> data = [];
 
   // ********* insert operations **********
 
   /// Add a row
-  void addRow(Map<String, dynamic> row, Map<int, String> indices) {
-    //print("DF ADD ROW $row / $indices");
-    final r = <dynamic>[];
-    var i = 0;
-    row.forEach((k, dynamic v) {
-      final keyName = indices[i];
-      r.add(row[keyName]);
-      ++i;
-    });
-    data.add(r);
-  }
+  void addRow(Map<String, Object?> row, List<String> columnNames) =>
+      data.add(columnNames.map((colName) => row[colName]).toList());
 
   // ********* select operations **********
 
   /// Row for an index position
-  Map<String, dynamic> rowForIndex(int index, Map<int, String> indices) {
-    final row = <String, dynamic>{};
+  Map<String, Object> rowForIndex(
+      int index, List<String> indicesToColumnNames) {
+    final row = <String, Object>{};
     final dataRow = data[index];
     var i = 0;
-    dataRow.forEach((dynamic item) {
-      row[indices[i]] = item;
-      ++i;
+    dataRow.forEach((item) {
+      if (item != null) row[indicesToColumnNames[i]] = item;
+      i++;
     });
     return row;
   }
 
   /// Rows for an index range of positions
-  List<Map<String, dynamic>> rowsForIndexRange(
-      int startIndex, int endIndex, Map<int, String> indices) {
-    final dataRows = <Map<String, dynamic>>[];
+  List<Map<String, Object>> rowsForIndexRange(
+      int startIndex, int endIndex, List<String> columnNames) {
+    final dataRows = <Map<String, Object>>[];
     for (final row in data.sublist(startIndex, endIndex)) {
-      final dataRow = <String, dynamic>{};
+      final dataRow = <String, Object>{};
       var i = 0;
-      row.forEach((dynamic item) {
-        dataRow[indices[i]] = item;
-        ++i;
+      row.forEach((Object? item) {
+        if (item != null) dataRow[columnNames[i]] = item;
+        i++;
       });
       dataRows.add(dataRow);
     }
@@ -51,36 +45,31 @@ class DataMatrix {
   }
 
   /// Get typed data from a column
-  List<T> typedRecordsForColumnIndice<T>(int columnIndice, {int limit}) {
-    final dataFound = <T>[];
-    var i = 0;
-    for (final row in data) {
-      T val;
-      try {
-        val = row[columnIndice] as T;
-      } catch (e) {
-        rethrow;
-        //throw TypeConversionException(
-        //    "Can not convert record $val to type $T $e");
-      }
-      dataFound.add(val);
-      ++i;
-      if (limit != null) {
-        if (i >= limit) {
-          break;
-        }
-      }
+  List<T?> typedRecordsForColumnIndex<T>(int columnIndex,
+          {int? offset, int? limit}) =>
+      data
+          .sublist(offset ?? 0, limit)
+          .map((row) => typedRecordForColumnIndexInRow<T>(columnIndex, row))
+          .toList();
+
+  /// Get typed data for a specific column in a row.
+  T? typedRecordForColumnIndexInRow<T>(int columnIndex, List<Object?> row) {
+    final rawVal = row[columnIndex];
+    if (!(rawVal is T?)) {
+      throw ArgumentError(
+          'Requested the record ($rawVal) as a $T at index $columnIndex of the following row:\n\t$row\n '
+          'but the record is a ${rawVal.runtimeType} which is not a subtype of $T.');
     }
-    return dataFound;
+    return row[columnIndex] as T?;
   }
 
   // ********* count operations **********
 
   /// Count values in a column
-  int countForValues(int columnIndice, List<dynamic> values) {
+  int countForValues(int columnIndex, List<Object?> values) {
     var n = 0;
     data.forEach((row) {
-      if (values.contains(row[columnIndice])) {
+      if (values.contains(row[columnIndex])) {
         ++n;
       }
     });
@@ -90,48 +79,36 @@ class DataMatrix {
   // ********* aggregations **********
 
   /// Sum a column
-  double sumCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.sum();
+  double sumCol(int columnIndex) {
+    return _getVector(columnIndex, NullMeanBehavior.skip)
+        .reduce((total, val) => total + val);
   }
 
   /// Mean a column
-  double meanCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.mean();
+  double meanCol(int columnIndex, {required NullMeanBehavior nullBehavior}) {
+    return sumCol(columnIndex) / _getVector(columnIndex, nullBehavior).length;
   }
 
   /// Get the max value of a column
-  double maxCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.max();
+  double maxCol(int columnIndex) {
+    return _getVector(columnIndex, NullMeanBehavior.skip).reduce(max);
   }
 
   /// Get the min value of a column
-  double minCol<T>(int columnIndice) {
-    final rawData = typedRecordsForColumnIndice<T>(columnIndice);
-    final data = List<double>.from(rawData.map<double>(_numToDouble));
-    final vector = Vector.fromList(data);
-    return vector.min();
+  double minCol(int columnIndex) {
+    return _getVector(columnIndex, NullMeanBehavior.skip).reduce(min);
   }
 
   // ***********************
   // Internal methods
   // ***********************
 
-  double _numToDouble<T>(T value) {
-    double n;
-    if (T == int || T == num) {
-      n = (value as num).toDouble();
-    } else {
-      n = value as double;
-    }
-    return n;
+  List<double> _getVector(int columnIndex, NullMeanBehavior nullBehavior) {
+    final rawData = typedRecordsForColumnIndex<num>(columnIndex);
+    final nullFiltered = nullBehavior == NullMeanBehavior.skip
+        ? rawData.where((e) => e != null)
+        : rawData.map((e) => e ?? 0.0);
+    // Cast is safe because nulls were eliminated above out above.
+    return nullFiltered.map((e) => e!.toDouble()).toList();
   }
 }

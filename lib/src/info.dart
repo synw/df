@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import 'column.dart';
 
 /// A class to manage dataframe info prints
@@ -12,7 +10,7 @@ class DataFrameInfo {
   }
 
   /// Print columns info
-  void colsInfo({@required List<DataFrameColumn> columns}) {
+  void colsInfo({required List<DataFrameColumn> columns}) {
     for (final col in columns) {
       print('Column $col');
     }
