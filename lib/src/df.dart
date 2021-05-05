@@ -311,12 +311,11 @@ class DataFrame {
   // ********* calculations **********
 
   /// Sum of a column
-  double sum_(String colName) => _matrix.sumCol<num>(_indexForColumn(colName));
+  double sum_(String colName) => _matrix.sumCol(_indexForColumn(colName));
 
   /// Mean of a column
   double mean_(String colName, {required NullMeanBehavior nullAggregation}) =>
-      _matrix.meanCol(_indexForColumn(colName),
-          nullAggregation: nullAggregation);
+      _matrix.meanCol(_indexForColumn(colName), nullBehavior: nullAggregation);
 
   /// Get the max value of a column
   double max_(String colName) => _matrix.maxCol(_indexForColumn(colName));
@@ -367,35 +366,71 @@ class DataFrame {
     }
   }
 
-  /// Get a new dataframe sorted by a column
-  DataFrame sort_(String colName, {required NullSortBehavior nullBehavior}) =>
+  /// Get a new dataframe sorted by a column.
+  ///
+  /// By default, rows are ordered by calling [Comparable.compare] on column
+  /// values and nulls are handled according to the specified [NullSortBehavior].
+  /// To customize sorting, you can either use your own [Comparable] as column
+  /// values or specify a custom compare function.
+  /// Sort_ does not guarantee a stable sort order.
+  ///
+  /// Note that `nullBehavior` and `compare` are mutually exclusive arguments.
+  /// Custom compare functions must handle nulls appropriately.
+  DataFrame sort_(String colName,
+          {NullSortBehavior? nullBehavior, CompareFunction? compare}) =>
       DataFrame._copyWithMatrix(
-          this, _sort(colName, inPlace: false, nullBehavior: nullBehavior));
+        this,
+        _sort(colName,
+            inPlace: false, nullBehavior: nullBehavior, compare: compare),
+      );
 
-  /// In-place sort this dataframe by a column
-  /// TODO(caseycrogers): Add support for custom comparator functions.
-  void sort(String colName, {required NullSortBehavior nullBehavior}) =>
-      _sort(colName, inPlace: true, nullBehavior: nullBehavior);
+  /// In-place sort this dataframe by a column.
+  ///
+  /// By default, rows are ordered by calling [Comparable.compare] on column
+  /// values and nulls are handled according to the specified [NullSortBehavior].
+  /// To customize sorting, you can either use your own [Comparable] as column
+  /// values or specify a custom compare function.
+  /// Sort does not guarantee a stable sort order.
+  ///
+  /// Note that `nullBehavior` and `compare` are mutually exclusive arguments.
+  /// Custom compare functions must handle nulls appropriately.
+  void sort(String colName,
+          {NullSortBehavior? nullBehavior, CompareFunction? compare}) =>
+      _sort(colName,
+          inPlace: true, nullBehavior: nullBehavior, compare: compare);
 
   List<List<Object?>> _sort(String colName,
-      {required bool inPlace, required NullSortBehavior nullBehavior}) {
+      {required bool inPlace,
+      NullSortBehavior? nullBehavior,
+      CompareFunction? compare}) {
+    if ((nullBehavior == null && compare == null) ||
+        (nullBehavior != null && compare != null)) {
+      throw ArgumentError(
+          'You must specify either a null sort behavior, or a compare function.');
+    }
     final newMatrixData = inPlace
         ? _matrix.data
         // Deep copy the rows.
         : _matrix.data.map((row) => List<Object?>.from(row)).toList();
     return newMatrixData
-      ..sort((a, b) => _compareRows(a, b, columnIndex(colName), nullBehavior));
+      ..sort((a, b) =>
+          _compareRows(a, b, columnIndex(colName), nullBehavior, compare));
   }
 
   int _compareRows(List<Object?> rowA, List<Object?> rowB, int index,
-      NullSortBehavior nullBehavior) {
+      NullSortBehavior? nullBehavior, CompareFunction? compare) {
     final recordA = _matrix.typedRecordForColumnIndexInRow<Comparable<Object>?>(
-            index, rowA) ??
-        _replaceNullForSort(nullBehavior);
+        index, rowA);
     final recordB = _matrix.typedRecordForColumnIndexInRow<Comparable<Object>?>(
-            index, rowA) ??
-        _replaceNullForSort(nullBehavior);
-    return recordA.compareTo(recordB);
+        index, rowB);
+    if (compare != null) {
+      return compare(recordA, recordB);
+    }
+    // Need to resolve null cases before calling compareTo.
+    if (recordA == null && recordB == null) return 0;
+    if (recordA == null) return nullBehavior == NullSortBehavior.first ? -1 : 1;
+    if (recordB == null) return nullBehavior == NullSortBehavior.first ? 1 : -1;
+    return Comparable.compare(recordA, recordB);
   }
 
   int _indexForColumn(String colName) {
@@ -412,6 +447,11 @@ class DataFrame {
   List<String> _columnIndices() => columns.map((c) => c.name).toList();
 }
 
+/// A function that compares two objects for sorting. It will return -1 if a
+/// should be ordered before b, 0 if a and b are equal wrt to ordering, and 1
+/// if a should be ordered after b.
+typedef CompareFunction = int Function(Object? a, Object? b);
+
 /// How to treat nulls when taking the average over a column.
 enum NullMeanBehavior {
   /// Skip null values.
@@ -425,32 +465,11 @@ enum NullMeanBehavior {
 
 /// How to treat nulls when sorting a data frame by a particular column.
 enum NullSortBehavior {
-  /// Treat null values as the minimum numerical value.
-  ///   eg Sort(-1, 1, null) => null, -1, 1
-  min,
+  /// Order null values before all other values.
+  ///   eg sort(-1, 1, null) => null, -1, 1
+  first,
 
-  /// Treat null values as the maximum numerical value.
-  ///   eg Sort(-1, 1, null) => -1, 1, null,
-  max,
-}
-
-Comparable<Object> _replaceNullForSort(NullSortBehavior nullSortBehavior) =>
-    nullSortBehavior == NullSortBehavior.min
-        ? _StaticComparable.minComparable
-        : _StaticComparable.maxComparable;
-
-class _StaticComparable implements Comparable<Object> {
-  final bool _isMin;
-
-  static final _StaticComparable minComparable = _StaticComparable._(true);
-  static final _StaticComparable maxComparable = _StaticComparable._(false);
-
-  _StaticComparable._(bool isMin) : _isMin = isMin;
-
-  @override
-  int compareTo(Object other) {
-    // Static comparable is equal to itself.
-    if (other == this) return 0;
-    return _isMin ? -1 : 1;
-  }
+  /// Order null values after all other values.
+  ///   eg sort(-1, 1, null) => -1, 1, null,
+  last,
 }

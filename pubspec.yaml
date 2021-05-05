@@ -1,7 +1,7 @@
 name: df
 description: A dataframe for Dart. An abstraction to help manipulating and analysing data
 homepage: https://github.com/synw/df
-version: 0.3.0
+version: 0.4.0-nullsafety.0
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
@@ -10,7 +10,6 @@ dependencies:
   extra_pedantic: ^1.3.0
   jiffy: ^4.0.0
   meta: ^1.3.0
-  ml_linalg: ^13.0.0
   pedantic: ^1.11.0
 
 dev_dependencies:

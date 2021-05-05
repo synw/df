@@ -1,4 +1,4 @@
-import 'package:ml_linalg/vector.dart';
+import 'dart:math';
 
 import '../df.dart';
 
@@ -79,35 +79,36 @@ class DataMatrix {
   // ********* aggregations **********
 
   /// Sum a column
-  double sumCol<T>(int columnIndex) {
-    return _getVector(columnIndex, NullMeanBehavior.skip).sum();
+  double sumCol(int columnIndex) {
+    return _getVector(columnIndex, NullMeanBehavior.skip)
+        .reduce((total, val) => total + val);
   }
 
   /// Mean a column
-  double meanCol(int columnIndex, {required NullMeanBehavior nullAggregation}) {
-    return _getVector(columnIndex, nullAggregation).mean();
+  double meanCol(int columnIndex, {required NullMeanBehavior nullBehavior}) {
+    return sumCol(columnIndex) / _getVector(columnIndex, nullBehavior).length;
   }
 
   /// Get the max value of a column
   double maxCol(int columnIndex) {
-    return _getVector(columnIndex, NullMeanBehavior.skip).max();
+    return _getVector(columnIndex, NullMeanBehavior.skip).reduce(max);
   }
 
   /// Get the min value of a column
   double minCol(int columnIndex) {
-    return _getVector(columnIndex, NullMeanBehavior.skip).min();
+    return _getVector(columnIndex, NullMeanBehavior.skip).reduce(min);
   }
 
   // ***********************
   // Internal methods
   // ***********************
 
-  Vector _getVector(int columnIndex, NullMeanBehavior nullBehavior) {
+  List<double> _getVector(int columnIndex, NullMeanBehavior nullBehavior) {
     final rawData = typedRecordsForColumnIndex<num>(columnIndex);
     final nullFiltered = nullBehavior == NullMeanBehavior.skip
         ? rawData.where((e) => e != null)
         : rawData.map((e) => e ?? 0.0);
     // Cast is safe because nulls were eliminated above out above.
-    return Vector.fromList(nullFiltered.map((e) => e!).toList());
+    return nullFiltered.map((e) => e!.toDouble()).toList();
   }
 }

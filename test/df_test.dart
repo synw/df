@@ -188,23 +188,42 @@ void main() {
   // TODO(caseycrogers): Add tests for null behavior
   test('sort', () async {
     final rows = [
-      {'col1': 1, 'col2': 4},
-      {'col1': 2, 'col2': 3},
-      {'col1': 3, 'col2': 2},
-      {'col1': 4, 'col2': 1},
+      {'col1': 1, 'col2': 'd'},
+      {'col1': 2, 'col2': 'c'},
+      {'col1': null, 'col2': null},
+      {'col1': 3, 'col2': 'b'},
+      {'col1': 4, 'col2': 'a'},
     ];
     df = DataFrame.fromRows(rows)
       ..head()
-      ..sort('col2', nullBehavior: NullSortBehavior.max);
-    expect(df.colRecords<int>('col1'), [4, 3, 2, 1]);
-    final df2 = df.sort_('col1', nullBehavior: NullSortBehavior.max);
-    expect(df2.colRecords<int>('col1'), [1, 2, 3, 4]);
+      ..sort('col2', nullBehavior: NullSortBehavior.last);
+    expect(df.colRecords<String>('col2'), ['a', 'b', 'c', 'd', null]);
+    expect(df.colRecords<int>('col1'), [4, 3, 2, 1, null]);
+    final df2 = df.sort_('col1', nullBehavior: NullSortBehavior.last);
+    expect(df2.colRecords<int>('col1'), [1, 2, 3, 4, null]);
+    final df3 = df.sort_('col1', nullBehavior: NullSortBehavior.first);
+    expect(df3.colRecords<int>('col1'), [null, 1, 2, 3, 4]);
     // Ensure base DF has not been modified
-    expect(df.colRecords<int>('col1'), [4, 3, 2, 1]);
+    expect(df.colRecords<int>('col1'), [4, 3, 2, 1, null]);
+
+    // Sort greatest to least with nulls first using a custom compare function
+    final df4 = df.sort_(
+      'col1',
+      compare: (a, b) => Comparable.compare(
+          (b ?? double.infinity) as num, (a ?? double.infinity) as num),
+    );
+    expect(df4.colRecords<int>('col1'), [null, 4, 3, 2, 1]);
+
     try {
-      df.sort_('wrong_col', nullBehavior: NullSortBehavior.max);
+      df.sort_('wrong_col', nullBehavior: NullSortBehavior.last);
     } catch (e) {
       expect(e is ColumnNotFoundException, true);
+    }
+    try {
+      df.sort_('col1',
+          nullBehavior: NullSortBehavior.last, compare: (a, b) => -1);
+    } catch (e) {
+      expect(e is ArgumentError, true);
     }
   });
 
