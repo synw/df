@@ -1,12 +1,23 @@
 # Changelog
 
+## 0.4.0-nullsafety.0
+
+ - Updates df to support null safety.
+
+
+ Additional breaking changes:
+
+ - `DataFrame.meanCol` and `DataMatrix.mean_` now require you to specify how to treat nulls
+ -`DataFrame.sort` and `DataFrame.sort_` now require you to either specify how to treat nulls or to provide a custom sort function
+ - All methods that previously or accepted returned `dynamic` now return `Object` or `Object?`
+
 ## 0.3.0
 
 Updates to support the quote escaping sections of the CSV standard (see: https://tools.ietf.org/html/rfc4180 sections 2.5-2.7):
 
-    supports using escape quotes to escape commas
-    supports using escape quotes to escape double quotes
-    supports using escape quotes to escape newlines
+ - supports using escape quotes to escape commas
+ - supports using escape quotes to escape double quotes
+ - supports using escape quotes to escape newlines
 
 BREAKING CHANGE TO THE DF PACKAGE. Here are the breaking changes, with examples:
 
