@@ -3,13 +3,11 @@
 ## 0.4.0-nullsafety.0
 
  - Updates df to support null safety.
-
-
- Additional breaking changes:
-
  - `DataFrame.meanCol` and `DataMatrix.mean_` now require you to specify how to treat nulls
  -`DataFrame.sort` and `DataFrame.sort_` now require you to either specify how to treat nulls or to provide a custom sort function
- - All methods that previously or accepted returned `dynamic` now return `Object` or `Object?`
+ - All methods that previously accepted or returned `dynamic` now return `Object` or `Object?`
+
+ All DataFrame columns have nullable data types. A future update may support non-nullable columns-if you'd like this feature comment and/or thumbs up it's corresponding [github issue](https://github.com/synw/df/issues/11)
 
 ## 0.3.0
 
